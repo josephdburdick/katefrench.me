@@ -24,6 +24,7 @@ export default async function Meta() {
       <meta name="viewport" content={viewport} />
       <meta charSet={charset} />
       <meta name="robots" content={robots} />
+      <meta name="apple-mobile-web-app-title" content={author} />
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={open_graph.type} />
