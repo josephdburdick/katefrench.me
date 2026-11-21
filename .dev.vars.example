@@ -1,0 +1,2 @@
+# Worker secrets for local development go in .dev.vars, one NAME=value per line.
+# This site needs none yet.

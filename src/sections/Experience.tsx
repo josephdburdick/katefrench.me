@@ -1,12 +1,10 @@
-"use client"
-
 import BodyText from "@/components/global/BodyText"
 import DateSpan from "@/components/global/DateSpan"
-import { useApi } from "@/components/providers/DataProvider"
+import { useApi } from "@/components/providers/ContentProvider"
 import convertNewLinesToHTML from "@/lib/convertNewLinesToHTML"
-import { Experience as ExperienceType, Role } from "@/lib/types"
+import { sanitizeHtml } from "@/lib/sanitize-html"
+import type { Experience as ExperienceType, Role } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 
 export default function Experience() {
   const { data } = useApi()
@@ -19,9 +17,10 @@ export default function Experience() {
           <DateSpan date={role.date} />
         </small>
         <span className="relative md:row-start-2 md:pt-2">
-          <Image
-            className="w-full rounded-xl"
-            objectFit="cover"
+          <img
+            loading="lazy"
+            decoding="async"
+            className="w-full rounded-xl object-cover"
             src={role.picture.src}
             alt={role.picture.alt}
             width={role.picture.width}
@@ -32,7 +31,7 @@ export default function Experience() {
         <BodyText
           className="prose space-y-4 lg:prose-lg xl:prose-xl md:row-start-2"
           dangerouslySetInnerHTML={{
-            __html: convertNewLinesToHTML(role.description),
+            __html: sanitizeHtml(convertNewLinesToHTML(role.description)),
           }}
         />
       </div>

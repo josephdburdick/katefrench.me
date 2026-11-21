@@ -1,9 +1,6 @@
-"use client"
-
 import Icon from "@/components/global/Icon"
-import { useApi } from "@/components/providers/DataProvider"
+import { useApi } from "@/components/providers/ContentProvider"
 import { buttonVariants } from "@/components/ui/button"
-import Image from "next/image"
 
 function Intro() {
   const { data } = useApi()
@@ -28,7 +25,9 @@ function Intro() {
                 </h1>
 
                 <span className="relative float-right lg:hidden">
-                  <Image
+                  <img
+                    loading="lazy"
+                    decoding="async"
                     width={intro.picture.width}
                     height={intro.picture.height}
                     alt={intro.picture.alt}
@@ -61,7 +60,9 @@ function Intro() {
         </div>
         <div className="col-span-12 flex items-center justify-center lg:col-span-6">
           <span className="relative -mb-24 hidden lg:block">
-            <Image
+            <img
+              loading="lazy"
+              decoding="async"
               {...intro.picture}
               alt={intro.picture.alt}
               src={intro.picture.src}
