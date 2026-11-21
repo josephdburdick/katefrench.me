@@ -16,7 +16,14 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 - One Cloudflare Worker in `worker/` using Hono. It serves the built pages as static assets and answers `/api/*`.
 - D1 for content, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
 - pnpm, vitest, ESLint. Every job must leave these passing: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-- `pnpm dev --port <port>` starts the pages and the Worker together with a local D1.
+- `pnpm dev --port <port>` starts the pages and the Worker together with a local D1. On a fresh checkout, run `pnpm db:migrate:local` and then `pnpm seed:local` first.
+
+## Content
+
+- Page content starts as Markdown with front matter in `content/*.md`, one file per `content` row (`about`, `contact`, `cv`, `experience`, `intro`, `site`).
+- `pnpm seed:local` replaces every row of the local `content` table with those files (`scripts/seed-*.ts`). It refuses `--remote` and any other argument.
+- `GET /api/content` (`worker/content.ts`) returns `{ [key]: { attributes, content, html } }`, where `html` is the Markdown body rendered and sanitized. The pages load it once through `ContentProvider` and read it with `useApi()`.
+- Treat stored content as untrusted. Every HTML string that reaches the page goes through `sanitizeHtml` in `src/lib/sanitize-html.ts`; never pass anything else to `dangerouslySetInnerHTML`.
 
 ## People
 
