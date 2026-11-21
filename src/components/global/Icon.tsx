@@ -1,5 +1,5 @@
 import icons from "@/lib/icons"
-import { LucideProps } from "lucide-react"
+import type { LucideProps } from "lucide-react"
 import React from "react"
 
 const Icon: { [key: string]: React.FC<LucideProps> } = {}

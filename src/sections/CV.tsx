@@ -1,11 +1,8 @@
-"use client"
-
 import BodyText from "@/components/global/BodyText"
 import DateSpan from "@/components/global/DateSpan"
-import { useApi } from "@/components/providers/DataProvider"
+import { useApi } from "@/components/providers/ContentProvider"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import Image, { ImageProps } from "next/image"
 import React from "react"
 
 type Section = {
@@ -57,7 +54,7 @@ export default function CV() {
 }
 
 function Hero(
-  props: ImageProps & {
+  props: React.ImgHTMLAttributes<HTMLImageElement> & {
     link?: {
       url: string
       text: string
@@ -68,7 +65,9 @@ function Hero(
   return (
     <div className="relative -mt-12 flex items-center justify-center gap-4">
       <div className="w-auto">
-        <Image
+        <img
+          loading="lazy"
+          decoding="async"
           alt={alt}
           src={src}
           {...rest}

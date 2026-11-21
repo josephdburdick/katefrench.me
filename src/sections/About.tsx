@@ -1,6 +1,4 @@
-"use client"
-
-import { useApi } from "@/components/providers/DataProvider"
+import { useApi } from "@/components/providers/ContentProvider"
 
 export default function Footer() {
   const { data } = useApi()
