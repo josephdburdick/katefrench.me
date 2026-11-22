@@ -4,6 +4,7 @@ import {
   type Field,
   INTENTS,
   LIMITS,
+  PRIVACY_NOTE,
   STEP_HEADINGS,
   groupsFor,
   intentOption,
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils"
 import { useEffect, useRef, useState } from "react"
 
 import Turnstile from "./Turnstile"
-import useContactForm from "./useContactForm"
+import useContactForm, { type Prefill } from "./useContactForm"
 
 const FIELD_ORDER: Field[] = [
   "intent",
@@ -210,7 +211,13 @@ const panelClass =
 
 const headingClass = "text-2xl text-primary focus:outline-none"
 
-export default function ContactForm({ email }: { email?: string }) {
+export default function ContactForm({
+  email,
+  prefill,
+}: {
+  email?: string
+  prefill: Prefill
+}) {
   const {
     answers,
     steps,
@@ -231,7 +238,7 @@ export default function ContactForm({ email }: { email?: string }) {
     trap,
     turnstileKey,
     update,
-  } = useContactForm()
+  } = useContactForm(prefill)
   const heading = useRef<HTMLHeadingElement>(null)
   const firstRender = useRef(true)
 
@@ -390,6 +397,7 @@ export default function ContactForm({ email }: { email?: string }) {
             />
           </div>
           <Turnstile onToken={setToken} resetKey={turnstileKey} />
+          <p className="text-[0.9375rem]">{PRIVACY_NOTE}</p>
         </>
       )}
 
