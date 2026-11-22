@@ -12,7 +12,7 @@ pnpm seed:local
 pnpm dev --port <port>
 ```
 
-In `.dev.vars`, set `LOCAL_SERVICES=1` and any `CONTACT_TO`, so the contact form uses local stand-ins for email and Turnstile. Then open `http://localhost:<port>`.
+In `.dev.vars`, set `LOCAL_SERVICES=1` and any `CONTACT_TO`, so the contact form uses local stand-ins for email, Turnstile and the calendar. Then open `http://localhost:<port>`.
 
 ## Checks
 
