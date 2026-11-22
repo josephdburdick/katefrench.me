@@ -20,9 +20,11 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 ## Content
 
-- Page content starts as Markdown with front matter in `content/*.md`, one file per `content` row (`about`, `contact`, `cv`, `experience`, `intro`, `site`).
+- Page content starts as Markdown with front matter in `content/*.md`, one file per `content` row: `about`, `contact`, `cv`, `experience`, `intro` and `site` from the old site, and `numbers`, `new-york`, `message`, `first-call`, `marketing`, `across-company`, `venues` and `closing` for the homepage.
+- `draft: true` in a file's front matter marks wording Kate has not approved yet. The seed moves it out of the attributes into the row's `draft` column (`migrations/0002_content_draft.sql`). The page never shows it; it is for the edit screen.
 - `pnpm seed:local` replaces every row of the local `content` table with those files (`scripts/seed-*.ts`). It refuses `--remote` and any other argument.
-- `GET /api/content` (`worker/content.ts`) returns `{ [key]: { attributes, content, html } }`, where `html` is the Markdown body rendered and sanitized. The pages load it once through `ContentProvider` and read it with `useApi()`.
+- `GET /api/content` (`worker/content.ts`) returns `{ [key]: { attributes, content, html, draft } }`, where `html` is the Markdown body rendered and sanitized and `draft` is a boolean. The pages load it once through `ContentProvider` and read it with `useApi()`.
+- The numbers strip and the block city format and count Kate's numbers with `src/lib/numbers.ts`.
 - Treat stored content as untrusted. Every HTML string that reaches the page goes through `sanitizeHtml` in `src/lib/sanitize-html.ts`; never pass anything else to `dangerouslySetInnerHTML`.
 
 ## People

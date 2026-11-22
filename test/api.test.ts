@@ -1,14 +1,19 @@
 import { env, exports } from "cloudflare:workers"
 import { describe, expect, it } from "vitest"
 
-import { seed } from "./content"
+import { draftKeys, keys, seed } from "./content"
 
 const req = (path: string) =>
   exports.default.fetch(new Request(`https://example.com${path}`))
 
 type Content = Record<
   string,
-  { attributes: Record<string, any>; content: string; html: string }
+  {
+    attributes: Record<string, any>
+    content: string
+    html: string
+    draft: boolean
+  }
 >
 
 describe("GET /api/content", () => {
@@ -18,24 +23,75 @@ describe("GET /api/content", () => {
     expect(res.status).toBe(200)
     expect(res.headers.get("content-type")).toMatch(/^application\/json/)
     const data = await res.json<Content>()
-    expect(Object.keys(data).sort()).toEqual([
-      "about",
-      "contact",
-      "cv",
-      "experience",
-      "intro",
-      "site",
-    ])
+    expect(Object.keys(data).sort()).toEqual(keys)
+    expect(keys).toHaveLength(14)
     for (const entry of Object.values(data)) {
       expect(Object.keys(entry).sort()).toEqual([
         "attributes",
         "content",
+        "draft",
         "html",
       ])
     }
     expect(data.site.attributes.name).toBe("Kate French")
     expect(data.about.html).toContain("<p>A creative thinker")
     expect(data.contact.attributes.links.resume.url).toBe("/cv")
+  })
+
+  it("flags exactly the draft rows", async () => {
+    await seed()
+    const data = await (await req("/api/content")).json<Content>()
+    for (const key of keys) {
+      expect(data[key].draft, key).toBe(draftKeys.includes(key))
+    }
+  })
+
+  it("serves Kate's four numbers", async () => {
+    await seed()
+    const data = await (await req("/api/content")).json<Content>()
+    const { items } = data.numbers.attributes
+    expect(items.map((i: { value: number }) => i.value)).toEqual([4, 85, 10, 2])
+    expect(items.map((i: { kind: string }) => i.kind)).toEqual([
+      "ratio",
+      "percent",
+      "percent",
+      "multiple",
+    ])
+  })
+
+  it("points the block city's three buttons at replies, meetings and demos", async () => {
+    await seed()
+    const data = await (await req("/api/content")).json<Content>()
+    const { buttons } = data["new-york"].attributes.city
+    expect(buttons.map((b: { number: string }) => b.number)).toEqual([
+      "replies",
+      "meetings",
+      "demos",
+    ])
+  })
+
+  it("leaves the client quote and the processes count empty", async () => {
+    await seed()
+    const data = await (await req("/api/content")).json<Content>()
+    expect(data["first-call"].attributes.quote).toEqual({
+      text: "",
+      name: "",
+      venue: "",
+    })
+    expect(data["across-company"].attributes.processes).toEqual({
+      count: null,
+      example: "",
+    })
+  })
+
+  it("still serves what /cv needs", async () => {
+    await seed()
+    const data = await (await req("/api/content")).json<Content>()
+    expect(data.cv.attributes.sections.length).toBeGreaterThan(0)
+    expect(data.intro.attributes.picture.src).toBe(
+      "/assets/images/kate-looking-up.webp",
+    )
+    expect(data.contact.attributes.links.linkedin.url).toBeTruthy()
   })
 
   it("sanitizes stored content before serving it", async () => {
