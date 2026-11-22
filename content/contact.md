@@ -8,4 +8,7 @@ links:
     text: View my Resume
     icon: readCV
     url: /cv
+  contact:
+    text: Get in touch
+    url: /contact
 ---
