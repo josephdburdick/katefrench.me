@@ -2,8 +2,10 @@ import { exports, env as workerEnv } from "cloudflare:workers"
 import { Hono } from "hono"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { LIMITS, SENDER } from "../src/lib/contact-form"
-import { contactApp } from "../worker/contact"
+import { LIMITS, NO_CALL, SENDER, TIME_TAKEN } from "../src/lib/contact-form"
+import { hashToken } from "../worker/booking"
+import { type Calendar, localCalendar } from "../worker/calendar"
+import { type ContactServices, contactApp } from "../worker/contact"
 import {
   type EmailMessage,
   type EmailSender,
@@ -42,15 +44,26 @@ const answers = {
 
 const valid = { answers, token: DUMMY_TOKEN, website: "" }
 
+// Monday 9:00 in New York, so the first open time is Tuesday 9:00.
+const NOW = new Date("2026-11-23T14:00:00.000Z")
+const OFFERED = "2026-11-24T14:00:00.000Z"
+
 function setup(
   email: EmailSender = localEmail(),
   overrides: Partial<Env> = {},
+  services: Partial<ContactServices> = {},
 ) {
   const turnstile = localTurnstile()
   const verify = vi.spyOn(turnstile, "verify")
   const app = new Hono<{ Bindings: Env }>().route(
     "/api/contact",
-    contactApp({ email, turnstile }),
+    contactApp({
+      email,
+      turnstile,
+      calendar: localCalendar(),
+      now: () => NOW,
+      ...services,
+    }),
   )
   const post = (body: unknown, headers: Record<string, string> = {}) =>
     app.request(
@@ -71,6 +84,7 @@ function setup(
 
 describe("POST /api/contact", () => {
   beforeEach(async () => {
+    await workerEnv.DB.prepare("DELETE FROM booking_requests").run()
     await workerEnv.DB.prepare("DELETE FROM leads").run()
   })
 
@@ -252,6 +266,7 @@ describe("POST /api/contact", () => {
 
 describe("saving leads", () => {
   beforeEach(async () => {
+    await workerEnv.DB.prepare("DELETE FROM booking_requests").run()
     await workerEnv.DB.prepare("DELETE FROM leads").run()
   })
 
@@ -392,6 +407,203 @@ describe("saving leads", () => {
         "INSERT INTO leads (id, created_at, intent, answers, name, email, status) VALUES ('x', 'now', 'hiring', '{}', 'n', 'e', 'pending')",
       ).run(),
     ).rejects.toThrow(/CHECK/)
+  })
+})
+
+type BookingRow = {
+  id: string
+  lead_id: string
+  created_at: string
+  answers: string
+  start_at: string
+  minutes: number
+  status: string
+  confirm_hash: string
+  decline_hash: string
+  answered_at: string | null
+}
+
+const requests = async () =>
+  (
+    await workerEnv.DB.prepare(
+      "SELECT * FROM booking_requests",
+    ).all<BookingRow>()
+  ).results
+
+const linkToken = (text: string, label: "Confirm" | "Decline") =>
+  text.match(
+    new RegExp(
+      `^${label}: https://katefrench\\.me/booking/([A-Za-z0-9_-]{43})$`,
+      "m",
+    ),
+  )?.[1]
+
+describe("call requests", () => {
+  beforeEach(async () => {
+    await workerEnv.DB.prepare("DELETE FROM booking_requests").run()
+    await workerEnv.DB.prepare("DELETE FROM leads").run()
+  })
+
+  const withTime = (time: unknown) => ({
+    ...valid,
+    answers: { ...answers, time },
+  })
+
+  it("stores a pending request holding only hashes of the emailed tokens", async () => {
+    const email = localEmail()
+    const { post } = setup(email)
+    const res = await post(withTime(OFFERED))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+
+    const [lead] = await leads()
+    const rows = await requests()
+    expect(rows).toHaveLength(1)
+    const [row] = rows
+    expect(row.lead_id).toBe(lead.id)
+    expect(row.status).toBe("pending")
+    expect(row.start_at).toBe(OFFERED)
+    expect(row.minutes).toBe(20)
+    expect(row.answered_at).toBeNull()
+    expect(row.created_at).toBe(NOW.toISOString())
+    expect(JSON.parse(row.answers)).toMatchObject({
+      ...answers,
+      time: OFFERED,
+    })
+
+    expect(email.sent).toHaveLength(1)
+    const [message] = email.sent
+    expect(message.subject).toBe("[katefrench.me] Hiring · Sales · New York")
+    expect(message.text).toContain(
+      "Want to talk it through?\nTuesday, November 24 at 9:00 AM EST, 20 minutes",
+    )
+    const confirm = linkToken(message.text, "Confirm")!
+    const decline = linkToken(message.text, "Decline")!
+    expect(confirm).toBeTruthy()
+    expect(decline).toBeTruthy()
+    expect(confirm).not.toBe(decline)
+    expect(row.confirm_hash).toBe(await hashToken(confirm))
+    expect(row.decline_hash).toBe(await hashToken(decline))
+    expect(row.confirm_hash).toMatch(/^[0-9a-f]{64}$/)
+    const stored = JSON.stringify(row)
+    expect(stored).not.toContain(confirm)
+    expect(stored).not.toContain(decline)
+  })
+
+  it("uses the request's origin for the links", async () => {
+    const email = localEmail()
+    const { app } = setup(email)
+    const res = await app.request(
+      "http://localhost:5170/api/contact",
+      {
+        method: "POST",
+        headers: { Origin: "http://localhost:5170" },
+        body: JSON.stringify(withTime(OFFERED)),
+      },
+      env,
+    )
+    expect(res.status).toBe(200)
+    expect(email.sent[0].text).toMatch(
+      /^Confirm: http:\/\/localhost:5170\/booking\/[A-Za-z0-9_-]{43}$/m,
+    )
+  })
+
+  it("refuses a time not on offer, a past time or junk, and stores nothing", async () => {
+    const email = localEmail()
+    const { post } = setup(email)
+    for (const time of [
+      "2026-11-24T17:00:00.000Z",
+      "2026-11-24T14:10:00.000Z",
+      "2026-11-28T14:00:00.000Z",
+      "2026-11-20T14:00:00.000Z",
+      "soon",
+    ]) {
+      const res = await post(withTime(time))
+      expect(res.status, time).toBe(400)
+      expect(await res.json()).toEqual({
+        ok: false,
+        error: "invalid",
+        fields: { time: TIME_TAKEN },
+      })
+    }
+    expect(await leads()).toEqual([])
+    expect(await requests()).toEqual([])
+    expect(email.sent).toEqual([])
+  })
+
+  it("refuses any time when there is no calendar or it throws", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    const broken: Calendar = {
+      busy: async () => {
+        throw new Error("down")
+      },
+      createEvent: async () => ({ videoLink: "" }),
+    }
+    for (const calendar of [null, broken]) {
+      const email = localEmail()
+      const { post } = setup(email, {}, { calendar })
+      const res = await post(withTime(OFFERED))
+      expect(res.status).toBe(400)
+      const body = await res.json<{ fields: object }>()
+      expect(body.fields).toEqual({ time: TIME_TAKEN })
+      expect(email.sent).toEqual([])
+    }
+    expect(await leads()).toEqual([])
+    expect(await requests()).toEqual([])
+    log.mockRestore()
+  })
+
+  it("treats a missing time or no call as today, with no request", async () => {
+    const email = localEmail()
+    const { post } = setup(email, {}, { calendar: null })
+    expect((await post(valid)).status).toBe(200)
+    expect((await post(withTime(NO_CALL))).status).toBe(200)
+    expect(await leads()).toHaveLength(2)
+    expect(await requests()).toEqual([])
+    const [missing, none] = email.sent
+    expect(missing.text).toBe(none.text)
+    expect(missing.subject).toBe(none.subject)
+    expect(missing.text).toContain(
+      "Want to talk it through?\nNo call, just email me",
+    )
+    expect(missing.text).not.toContain("Confirm:")
+  })
+
+  it("asks for a time when the time is empty", async () => {
+    const { post } = setup()
+    const res = await post(withTime(""))
+    expect(res.status).toBe(400)
+    const body = await res.json<{ fields: object }>()
+    expect(Object.keys(body.fields)).toEqual(["time"])
+  })
+
+  it("still sends the email with the time but no links when the request insert fails", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    const email = localEmail()
+    const db = workerEnv.DB
+    const failing = {
+      prepare: (sql: string) => {
+        if (sql.startsWith("INSERT INTO booking_requests")) {
+          throw new Error("no table")
+        }
+        return db.prepare(sql)
+      },
+    } as unknown as D1Database
+    const { post } = setup(email, { DB: failing })
+    const res = await post(withTime(OFFERED))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(await leads()).toHaveLength(1)
+    expect(await requests()).toEqual([])
+    expect(email.sent).toHaveLength(1)
+    expect(email.sent[0].text).toContain("Tuesday, November 24 at 9:00 AM EST")
+    expect(email.sent[0].text).not.toContain("Confirm:")
+    expect(email.sent[0].text).not.toContain("Decline:")
+    expect(log).toHaveBeenCalledWith(
+      "contact: booking request insert failed",
+      "unknown",
+    )
+    log.mockRestore()
   })
 })
 

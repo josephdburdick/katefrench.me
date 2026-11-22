@@ -26,7 +26,10 @@ export function localEmail(): EmailSender & { sent: EmailMessage[] } {
     sent,
     async send(message) {
       sent.push(message)
-      console.log(`local email to ${message.to}: ${message.subject}`)
+      // The body shows local booking links, which exist nowhere else.
+      console.log(
+        `local email to ${message.to}: ${message.subject}\n${message.text}`,
+      )
     },
   }
 }

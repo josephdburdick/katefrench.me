@@ -1,8 +1,10 @@
 import {
   type Answers,
+  type Availability,
   type Errors,
   type Field,
   type Intent,
+  NO_CALL,
   type Source,
   emptyAnswers,
   firstStepWithError,
@@ -10,9 +12,9 @@ import {
   validateStep,
   withIntent,
 } from "@/lib/contact-form"
-import { useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-import { submitContact } from "./submit"
+import { loadAvailability, submitContact } from "./submit"
 
 export type Failure = "turnstile" | "send" | null
 
@@ -32,8 +34,30 @@ export default function useContactForm({ intent, from }: Prefill) {
   const [token, setToken] = useState<string | null>(null)
   const [turnstileKey, setTurnstileKey] = useState(0)
   const [errorFocus, setErrorFocus] = useState(0)
+  const [availability, setAvailability] = useState<Availability | "loading">(
+    "loading",
+  )
   const inFlight = useRef(false)
   const trap = useRef<HTMLInputElement>(null)
+
+  const showTimes = useCallback((result: Availability | null) => {
+    const offer = result ?? { times: [], minutes: 0 }
+    setAvailability(offer)
+    if (offer.times.length === 0) {
+      setAnswers((current) =>
+        current.time === "" ? { ...current, time: NO_CALL } : current,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadAvailability().then(showTimes)
+  }, [showTimes])
+
+  function reloadTimes() {
+    setAvailability("loading")
+    void loadAvailability().then(showTimes)
+  }
 
   const steps = stepsFor(answers.intent)
   const step = steps[stepIndex]
@@ -67,6 +91,11 @@ export default function useContactForm({ intent, from }: Prefill) {
     clearError("details")
   }
 
+  function pickTime(time: string) {
+    setAnswers((current) => ({ ...current, time }))
+    clearError("time")
+  }
+
   function back() {
     setErrors({})
     setFailure(null)
@@ -97,6 +126,10 @@ export default function useContactForm({ intent, from }: Prefill) {
 
     if (result.error === "invalid" && result.fields) {
       const fields = result.fields
+      if (fields.time) {
+        setAnswers((current) => ({ ...current, time: "" }))
+        reloadTimes()
+      }
       setErrors(fields)
       setErrorFocus((n) => n + 1)
       const first = firstStepWithError(steps, fields)
@@ -123,6 +156,7 @@ export default function useContactForm({ intent, from }: Prefill) {
 
   return {
     answers,
+    availability,
     steps,
     step,
     stepIndex,
@@ -139,6 +173,7 @@ export default function useContactForm({ intent, from }: Prefill) {
     update,
     pickIntent,
     pickDetail,
+    pickTime,
     back,
     next,
   }

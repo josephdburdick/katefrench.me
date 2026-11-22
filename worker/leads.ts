@@ -5,13 +5,14 @@ export async function insertLead(
   db: D1Database,
   answers: Answers,
   from: Source | null,
-): Promise<void> {
+): Promise<string> {
+  const id = crypto.randomUUID()
   await db
     .prepare(
       "INSERT INTO leads (id, created_at, intent, answers, name, email, company, from_section) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(
-      crypto.randomUUID(),
+      id,
       new Date().toISOString(),
       answers.intent,
       JSON.stringify({
@@ -24,4 +25,5 @@ export async function insertLead(
       from,
     )
     .run()
+  return id
 }
