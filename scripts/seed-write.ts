@@ -23,8 +23,8 @@ export async function seedContent(
     DB.prepare("DELETE FROM content"),
     ...rows.map((row) =>
       DB.prepare(
-        "INSERT INTO content (key, attributes, body, updated_at) VALUES (?, ?, ?, ?)",
-      ).bind(row.key, row.attributes, row.body, updatedAt),
+        "INSERT INTO content (key, attributes, body, draft, updated_at) VALUES (?, ?, ?, ?, ?)",
+      ).bind(row.key, row.attributes, row.body, row.draft, updatedAt),
     ),
   ])
   return rows.length
