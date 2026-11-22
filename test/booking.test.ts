@@ -1,8 +1,9 @@
-import { env as workerEnv } from "cloudflare:workers"
+import { exports, env as workerEnv } from "cloudflare:workers"
 import { Hono } from "hono"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { SENDER } from "../src/lib/contact-form"
+import type { LeadDetail, LeadsResponse } from "../src/lib/leads"
 import { bookingApp } from "../worker/booking"
 import { type Calendar, localCalendar } from "../worker/calendar"
 import { type ContactServices, contactApp } from "../worker/contact"
@@ -272,6 +273,43 @@ describe("booking links", () => {
       }
       expect(links.calendar.created.length).toBe(action === "confirm" ? 1 : 0)
       expect(links.email.sent).toHaveLength(1)
+    }
+  })
+
+  it("shows a confirmed call as call booked in Kate's leads inbox", async () => {
+    const { post, confirm } = await setup()
+    await post(confirm)
+    const inbox = (path: string) =>
+      exports.default.fetch(
+        new Request(`${ORIGIN}/api/edit/dev-owner-token/leads${path}`),
+      )
+    const list = await (await inbox("")).json<LeadsResponse>()
+    expect(list.leads).toMatchObject([
+      { name: "Sam Lee", status: "call-booked" },
+    ])
+    expect(list.summary.byStatus["call-booked"]).toBe(1)
+    const detail = await (
+      await inbox(`/${list.leads[0].id}`)
+    ).json<LeadDetail>()
+    expect(detail.status).toBe("call-booked")
+  })
+
+  it("lets Kate delete a lead with a pending request, after which both links are used", async () => {
+    const { call, confirm, decline } = await setup()
+    const { id } = (await workerEnv.DB.prepare("SELECT id FROM leads").first<{
+      id: string
+    }>())!
+    const res = await exports.default.fetch(
+      new Request(`${ORIGIN}/api/edit/dev-owner-token/leads/${id}`, {
+        method: "DELETE",
+      }),
+    )
+    expect(res.status).toBe(200)
+    expect(
+      await workerEnv.DB.prepare("SELECT * FROM booking_requests").all(),
+    ).toMatchObject({ results: [] })
+    for (const token of [confirm, decline]) {
+      expect(await (await call(token)).json()).toEqual({ state: "used" })
     }
   })
 

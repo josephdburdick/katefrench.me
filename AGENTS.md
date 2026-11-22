@@ -14,7 +14,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 - Vite, React 19 and TypeScript for the pages in `src/`; Tailwind and shadcn components in `src/components/ui/`.
 - One Cloudflare Worker in `worker/` using Hono. It serves the built pages as static assets and answers `/api/*`.
-- D1 for content, leads from the contact form, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
+- D1 for content, leads from the contact form with Kate's status and notes, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
 - pnpm, vitest, ESLint. Every job must leave these passing: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - `pnpm dev --port <port>` starts the pages and the Worker together with a local D1. On a fresh checkout, run `pnpm db:migrate:local` and then `pnpm seed:local` first.
 
@@ -43,8 +43,20 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 - The calendar sits behind `Calendar` in `worker/calendar.ts`: `busy(from, to)` returns busy intervals only, and `createEvent` returns a video link. The stand-in `localCalendar` is busy 12:00 to 13:00 New York time each day plus every event it created, and records them in `created`. Outside `LOCAL_SERVICES=1` the calendar is `null` until the Google Calendar follow-up, so the live site offers only "No call".
 - `openTimes` in `worker/availability.ts` is the open-time math: the weekdays, hours, call length, notice and time zone from the one `booking_settings` row (`migrations/0006_booking.sql`), a 14-day window from now, and no overlap with busy times. It converts wall time with `Intl` only.
 - `GET /api/availability` returns `{ times, minutes }` and nothing else from the calendar, or no times when the calendar is missing or fails.
-- A request is a `booking_requests` row with two single-use tokens, Confirm and Decline. Only their SHA-256 hashes are stored. `/api/booking/:token` (`worker/booking.ts`) shows a request on GET without changing it, and confirms or declines it on POST (same `Origin` rule as the contact form, `worker/origin.ts`). Confirm re-checks the calendar, creates the event, sets the lead to `call-booked` and emails the visitor; when the time is no longer free it answers `taken` and the request stays pending. Once either link is used, both answer `used`.
+- A request is a `booking_requests` row with two single-use tokens, Confirm and Decline. Only their SHA-256 hashes are stored. `/api/booking/:token` (`worker/booking.ts`) shows a request on GET without changing it, and confirms or declines it on POST (same `Origin` rule as the contact form, `worker/origin.ts`). Confirm re-checks the calendar, creates the event, sets the lead to `call-booked` (the `LeadStatus` from `src/lib/leads.ts`, so the leads inbox shows it as "Call booked") and emails the visitor; when the time is no longer free it answers `taken` and the request stays pending. Once either link is used, both answer `used`. Deleting a lead from the inbox deletes its requests too (`ON DELETE CASCADE`), and their links then answer `used`.
 - Kate opens the links at `/booking/:token` (`src/pages/BookingPage.tsx`), which acts only when she presses the button.
+
+## Edit link
+
+- Kate's screens are `/edit/<token>` (home), `/edit/<token>/numbers` and `/edit/<token>/sections/<key>` (`src/pages/edit/`, `src/components/edit/`). They cover the eight homepage sections only: the four numbers, every text field, and each section's draft flag.
+- They load and save through `/api/edit/<token>/...` (`worker/edit.ts`): `GET /content`, `PUT /numbers` and `PUT /sections/:key`. `requireEditToken` checks the token first; a wrong, missing or too-long token gets the same `{ "error": "not found" }` 404 as any unknown API path. Every edit response carries `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer` and `Cache-Control: no-store`. Never log the token or the request path.
+- Section keys, titles, limits, number ranges, locked paths and the checks live in `src/lib/edit-content.ts`, shared by the screens and the Worker like `contact-form.ts`. A section save may change only string leaves of the stored attributes; ids, `kind`, button numbers, photo `src`, the closing `url` and non-string values stay as stored.
+- D1 keeps only the token's SHA-256 hash, in the single-row `edit_token` table (`migrations/0004_edit_token.sql`). `worker/edit-token.ts` makes, hashes, compares and stores tokens.
+- `pnpm edit-link:local` makes a new token for the local D1, prints `/edit/<token>` once and makes the old link stop working. Like the seed, it refuses `--remote` and any other argument.
+- `dev-owner-token` works only when `LOCAL_SERVICES=1`. Anywhere else it is checked against the stored hash like any other token.
+- Leads: `/edit/<token>/leads` lists every lead (new ones first, each group newest first) under counts for this calendar month in New York and for each status, with a status filter on the page. `/edit/<token>/leads/<id>` shows every answer in `buildEmail`'s order (`answerPairs` in `src/lib/contact-form.ts`), except the call time, which the lead doesn't store, a "Reply by email" `mailto:` link, a status and private notes to save, and a delete with an on-page confirm. Only the edit home links to them.
+- They use `GET /leads`, `GET /leads/:id`, `PUT /leads/:id` (`{ status, notes }` only) and `DELETE /leads/:id` (`worker/edit-leads.ts`), mounted on the `edit` app so the token check and headers run first. An unknown or over-64-character id gets the plain 404. The list leaves out email, answers and notes. Delete is for good: no soft delete or undo.
+- Statuses and their labels, `LEAD_LIMITS` (notes up to 5,000 characters, body capped like the other edit saves), `validateLeadUpdate`, `monthStart` and the response types live in `src/lib/leads.ts`. Notes are the `notes` column from `migrations/0005_lead_notes.sql`. Never log a lead's answers, name, email or notes.
 
 ## People
 

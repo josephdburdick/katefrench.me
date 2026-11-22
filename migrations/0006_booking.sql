@@ -14,7 +14,7 @@ INSERT INTO booking_settings (id) VALUES (1);
 
 CREATE TABLE booking_requests (
   id TEXT PRIMARY KEY,
-  lead_id TEXT NOT NULL REFERENCES leads(id),
+  lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
   created_at TEXT NOT NULL,
   answers TEXT NOT NULL,
   start_at TEXT NOT NULL,

@@ -8,6 +8,7 @@ import {
   formatCallTime,
   toAnswers,
 } from "../src/lib/contact-form"
+import type { LeadStatus } from "../src/lib/leads"
 import { readSettings } from "./availability"
 import type { ContactServices } from "./contact"
 import type { Env } from "./env"
@@ -15,6 +16,7 @@ import { originAllowed } from "./origin"
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/
 const MINUTE = 60_000
+const CALL_BOOKED: LeadStatus = "call-booked"
 
 function newToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32))
@@ -214,8 +216,8 @@ export function bookingApp(
     }
 
     await db
-      .prepare("UPDATE leads SET status = 'call-booked' WHERE id = ?")
-      .bind(row.lead_id)
+      .prepare("UPDATE leads SET status = ? WHERE id = ?")
+      .bind(CALL_BOOKED, row.lead_id)
       .run()
 
     const emailed = await sendVisitor(
