@@ -8,7 +8,13 @@ export default defineConfig(async () => {
       cloudflareTest({
         main: "./worker/index.ts",
         wrangler: { configPath: "./wrangler.jsonc" },
-        miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
+        miniflare: {
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            LOCAL_SERVICES: "1",
+            CONTACT_TO: "kate@example.com",
+          },
+        },
       }),
     ],
     test: {
