@@ -27,6 +27,14 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 - The numbers strip and the block city format and count Kate's numbers with `src/lib/numbers.ts`.
 - Treat stored content as untrusted. Every HTML string that reaches the page goes through `sanitizeHtml` in `src/lib/sanitize-html.ts`; never pass anything else to `dangerouslySetInnerHTML`.
 
+## Contact form
+
+- Questions, options, limits, step order and checks live in `src/lib/contact-form.ts`. The `/contact` page (`src/components/contact/`) and the Worker both import it; never copy them into a component.
+- `POST /api/contact` (`worker/contact.ts`) checks, in order: method, `Origin`, body size, the `website` trap field, Turnstile, then `validateAll`. It sends one email to `CONTACT_TO` and stores nothing.
+- Email goes through `EmailSender` (`worker/email.ts`: `cloudflareEmail`, stand-in `localEmail`) and Turnstile through `TurnstileVerifier` (`worker/turnstile.ts`: `siteverify`, stand-in `localTurnstile`, which accepts only the test token).
+- `LOCAL_SERVICES=1` picks the stand-ins (set in `.dev.vars` and the vitest bindings). `CONTACT_TO` is the recipient and `TURNSTILE_SECRET` the Turnstile secret, both Worker secrets. `VITE_TURNSTILE_SITE_KEY` is the page's site key; unset, it uses Cloudflare's always-pass test key.
+- When sending fails, the page shows `contact.attributes.email` from `content/contact.md` with a Copy button, or a plain retry message when it is unset.
+
 ## People
 
 - Visitors: hiring managers and recruiters, and venue owners or event organizers. Most are on a phone and give the page a minute.
