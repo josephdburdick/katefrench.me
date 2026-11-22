@@ -35,6 +35,15 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 - `LOCAL_SERVICES=1` picks the stand-ins (set in `.dev.vars` and the vitest bindings). `CONTACT_TO` is the recipient and `TURNSTILE_SECRET` the Turnstile secret, both Worker secrets. `VITE_TURNSTILE_SITE_KEY` is the page's site key; unset, it uses Cloudflare's always-pass test key.
 - When sending fails, the page shows `contact.attributes.email` from `content/contact.md` with a Copy button, or a plain retry message when it is unset.
 
+## Edit link
+
+- Kate's screens are `/edit/<token>` (home), `/edit/<token>/numbers` and `/edit/<token>/sections/<key>` (`src/pages/edit/`, `src/components/edit/`). They cover the eight homepage sections only: the four numbers, every text field, and each section's draft flag.
+- They load and save through `/api/edit/<token>/...` (`worker/edit.ts`): `GET /content`, `PUT /numbers` and `PUT /sections/:key`. `requireEditToken` checks the token first; a wrong, missing or too-long token gets the same `{ "error": "not found" }` 404 as any unknown API path. Every edit response carries `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer` and `Cache-Control: no-store`. Never log the token or the request path.
+- Section keys, titles, limits, number ranges, locked paths and the checks live in `src/lib/edit-content.ts`, shared by the screens and the Worker like `contact-form.ts`. A section save may change only string leaves of the stored attributes; ids, `kind`, button numbers, photo `src`, the closing `url` and non-string values stay as stored.
+- D1 keeps only the token's SHA-256 hash, in the single-row `edit_token` table (`migrations/0004_edit_token.sql`). `worker/edit-token.ts` makes, hashes, compares and stores tokens.
+- `pnpm edit-link:local` makes a new token for the local D1, prints `/edit/<token>` once and makes the old link stop working. Like the seed, it refuses `--remote` and any other argument.
+- `dev-owner-token` works only when `LOCAL_SERVICES=1`. Anywhere else it is checked against the stored hash like any other token.
+
 ## People
 
 - Visitors: hiring managers and recruiters, and venue owners or event organizers. Most are on a phone and give the page a minute.
