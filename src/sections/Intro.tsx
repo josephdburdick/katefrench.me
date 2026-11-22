@@ -59,7 +59,10 @@ function Intro() {
                   {contact.text}
                 </a>
                 <a
-                  className={buttonVariants({ variant: "link", size: "lg" })}
+                  className={cn(
+                    buttonVariants({ variant: "link", size: "lg" }),
+                    "px-0",
+                  )}
                   href={resume.url}
                 >
                   {resume.text}
