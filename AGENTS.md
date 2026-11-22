@@ -48,6 +48,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 ## Conventions
 
 - Dependencies: use what the spec names or what `whereisjohnny.com` already uses for the same job. `three` is allowed for the 3D pieces. Anything else needs the spec to ask for it.
+- A three.js piece loads through a dynamic `import()` only when it nears the viewport, and keeps a still version for reduced motion, missing WebGL or a failed load.
 - Outside services are Cloudflare Turnstile, Cloudflare Email Sending and Google Calendar. Tests and local development never call them: use Turnstile's published test keys, and put email and calendar behind small interfaces with a local stand-in that records calls.
 - Secrets live in Worker secrets. Commit `.dev.vars.example` with names only.
 - Check every input on the server even when the page already checked it.
