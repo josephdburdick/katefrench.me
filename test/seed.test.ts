@@ -2,14 +2,14 @@ import { env } from "cloudflare:workers"
 import { describe, expect, it } from "vitest"
 
 import { assertLocalOnly } from "../scripts/seed-guard.ts"
-import { seed } from "./content"
+import { draftKeys, keys, seed } from "./content"
 
-type Row = { key: string; attributes: string; body: string }
+type Row = { key: string; attributes: string; body: string; draft: number }
 
 const rows = async () =>
   (
     await env.DB.prepare(
-      "SELECT key, attributes, body FROM content ORDER BY key",
+      "SELECT key, attributes, body, draft FROM content ORDER BY key",
     ).all<Row>()
   ).results
 
@@ -20,15 +20,16 @@ const attributesOf = async (key: string) => {
 
 describe("seed", () => {
   it("writes one row per content file", async () => {
-    expect(await seed()).toBe(6)
-    expect((await rows()).map((r) => r.key)).toEqual([
-      "about",
-      "contact",
-      "cv",
-      "experience",
-      "intro",
-      "site",
-    ])
+    expect(await seed()).toBe(14)
+    expect((await rows()).map((r) => r.key)).toEqual(keys)
+  })
+
+  it("moves draft: true out of the attributes into the draft column", async () => {
+    await seed()
+    for (const row of await rows()) {
+      expect(row.draft, row.key).toBe(draftKeys.includes(row.key) ? 1 : 0)
+      expect(JSON.parse(row.attributes), row.key).not.toHaveProperty("draft")
+    }
   })
 
   it("replaces every ${basePath} with the site root", async () => {
@@ -60,10 +61,10 @@ describe("seed", () => {
     ])
   })
 
-  it("gives the same six rows when run twice", async () => {
+  it("gives the same 14 rows when run twice", async () => {
     await seed()
     await seed()
-    expect(await rows()).toHaveLength(6)
+    expect(await rows()).toHaveLength(14)
   })
 })
 

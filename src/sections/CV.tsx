@@ -2,9 +2,13 @@ import BodyText from "@/components/global/BodyText"
 import DateSpan from "@/components/global/DateSpan"
 import { useApi } from "@/components/providers/ContentProvider"
 import { buttonVariants } from "@/components/ui/button"
-import type { ContactLink } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import React from "react"
+
+type Link = {
+  url: string
+  text: string
+}
 
 type Section = {
   title: string
@@ -57,8 +61,8 @@ export default function CV() {
 
 function Hero(
   props: React.ImgHTMLAttributes<HTMLImageElement> & {
-    link?: ContactLink
-    contact?: ContactLink
+    link?: Link
+    contact?: Link
   },
 ) {
   const { alt, src, link, contact, ...rest } = props

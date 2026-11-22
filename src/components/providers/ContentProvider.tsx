@@ -10,6 +10,7 @@ type ContentEntry = {
   attributes: any
   content: string
   html: string
+  draft: boolean
 }
 
 export type Content = Record<string, ContentEntry>

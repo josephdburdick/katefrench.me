@@ -9,8 +9,10 @@ picture:
   alt: Kate French Portrait
   width: 384
   height: 512
+
+link:
+  text: Read how I did it
+  url: "#new-york"
 ---
 
-A dynamic New York-based professional with a talent for media, sales, and customer engagement.
-
-<!-- <span class="text-base">My background in customer service, administration, and hospitality has equipped me with strong analytical thinking, attention to detail, and excellent communication skills. I'm passionate about understanding audience needs and creating effective solutions, and I'm excited to bring these skills to your next venture.</span> -->
+I spent ten years working in restaurants and bars. Now I sign New York's venues and event organizers to AdmitONE. I am building the company's New York market from scratch, on my own. One in four of my sales meetings ends with a new client.
