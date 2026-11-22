@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/bricolage-grotesque";
 @plugin "@tailwindcss/typography";
 
 /*
@@ -16,6 +17,9 @@
 
 @theme inline {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    "Bricolage Grotesque Variable", "Inter Variable", ui-sans-serif, system-ui,
+    sans-serif;
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
