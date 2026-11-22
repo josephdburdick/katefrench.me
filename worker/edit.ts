@@ -15,7 +15,7 @@ import {
 import { hashEditToken, safeEqual } from "./edit-token"
 import type { Env } from "./env"
 
-type EditEnv = { Bindings: Env }
+export type EditEnv = { Bindings: Env }
 
 type Row = {
   key: string
@@ -25,12 +25,13 @@ type Row = {
   updated_at: string
 }
 
-const MAX_TOKEN_LENGTH = 64
+export const MAX_TOKEN_LENGTH = 64
 const DEV_TOKEN = "dev-owner-token"
 
-const notFound = (c: Context<EditEnv>) => c.json({ error: "not found" }, 404)
+export const notFound = (c: Context<EditEnv>) =>
+  c.json({ error: "not found" }, 404)
 
-const errorCode = (err: unknown) =>
+export const errorCode = (err: unknown) =>
   String((err as { code?: unknown })?.code ?? "unknown")
 
 /** Keeps every edit response, 404s included, out of search results, referrers and caches. */
@@ -70,7 +71,8 @@ type Parsed =
   | { ok: true; body: Record<string, unknown> }
   | { ok: false; response: Response }
 
-async function readBody(c: Context<EditEnv>): Promise<Parsed> {
+/** Rejects a body over `EDIT_LIMITS.body` by declared or actual size with 413, and anything but a JSON object with 400. */
+export async function readBody(c: Context<EditEnv>): Promise<Parsed> {
   const tooLarge = () => ({
     ok: false as const,
     response: c.json({ error: "too_large" }, 413),
@@ -90,12 +92,17 @@ async function readBody(c: Context<EditEnv>): Promise<Parsed> {
   }
 }
 
-const invalid = (c: Context<EditEnv>, fields: EditErrors) =>
+export const invalid = (c: Context<EditEnv>, fields: EditErrors) =>
   c.json({ error: "invalid", fields }, 400)
 
-const saveFailed = (c: Context<EditEnv>, err: unknown) => {
+export const saveFailed = (c: Context<EditEnv>, err: unknown) => {
   console.error("edit: save failed", errorCode(err))
   return c.json({ error: "save failed" }, 500)
+}
+
+export const loadFailed = (c: Context<EditEnv>, err: unknown) => {
+  console.error("edit: load failed", errorCode(err))
+  return c.json({ error: "load failed" }, 500)
 }
 
 const loadRow = (db: D1Database, key: SectionKey) =>
@@ -131,8 +138,7 @@ edit.get("/content", async (c) => {
     }
     return c.json(data)
   } catch (err) {
-    console.error("edit: load failed", errorCode(err))
-    return c.json({ error: "load failed" }, 500)
+    return loadFailed(c, err)
   }
 })
 

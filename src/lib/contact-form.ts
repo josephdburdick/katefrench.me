@@ -318,6 +318,22 @@ export function toAnswers(raw: unknown): Answers {
 
 const oneLine = (value: string) => value.replace(/[\r\n]+/g, " ").trim()
 
+/** Every question with its answer, in the order the visitor saw them. The email and the lead screen both use it. */
+export function answerPairs(answers: Answers): [string, string][] {
+  const option = answers.intent ? intentOption(answers.intent) : undefined
+  return [
+    [STEP_HEADINGS.intent, option?.label ?? ""],
+    ...(option?.groups ?? []).map((group): [string, string] => [
+      group.question,
+      answers.details[group.key] ?? "",
+    ]),
+    [option?.prompt ?? STEP_HEADINGS.message, answers.message.trim()],
+    [FIELD_LABELS.name, oneLine(answers.name)],
+    [FIELD_LABELS.email, answers.email.trim()],
+    [FIELD_LABELS.company, oneLine(answers.company) || "Not given"],
+  ]
+}
+
 export function buildEmail(answers: Answers): {
   subject: string
   text: string
@@ -333,18 +349,7 @@ export function buildEmail(answers: Answers): {
     .filter(Boolean)
     .join(" · ")
 
-  const pairs: [string, string][] = [
-    [STEP_HEADINGS.intent, option?.label ?? ""],
-    ...(option?.groups ?? []).map((group): [string, string] => [
-      group.question,
-      answers.details[group.key] ?? "",
-    ]),
-    [option?.prompt ?? STEP_HEADINGS.message, answers.message.trim()],
-    [FIELD_LABELS.name, name],
-    [FIELD_LABELS.email, answers.email.trim()],
-    [FIELD_LABELS.company, oneLine(answers.company) || "Not given"],
-  ]
-  const text = pairs
+  const text = answerPairs(answers)
     .map(([question, answer]) => `${question}\n${answer}`)
     .join("\n\n")
 
