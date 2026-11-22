@@ -1,19 +1,23 @@
 import type { EditContent, EditErrors, SaveResponse } from "@/lib/edit-content"
 
-export type LoadState =
+export type LoadState<T = EditContent> =
   | { status: "loading" }
   | { status: "not-found" }
   | { status: "error" }
-  | { status: "ready"; data: EditContent }
+  | { status: "ready"; data: T }
 
 const base = (token: string) => `/api/edit/${encodeURIComponent(token)}`
 
-export async function loadEditContent(token: string): Promise<LoadState> {
+/** `path` is the part after the token, such as `/content`. */
+export async function loadEdit<T>(
+  token: string,
+  path: string,
+): Promise<LoadState<T>> {
   try {
-    const res = await fetch(`${base(token)}/content`, { cache: "no-store" })
+    const res = await fetch(`${base(token)}${path}`, { cache: "no-store" })
     if (res.status === 404) return { status: "not-found" }
     if (!res.ok) return { status: "error" }
-    return { status: "ready", data: (await res.json()) as EditContent }
+    return { status: "ready", data: (await res.json()) as T }
   } catch {
     return { status: "error" }
   }
@@ -41,5 +45,14 @@ export async function saveEdit(
     }
   } catch {
     return { ok: false }
+  }
+}
+
+export async function deleteEdit(token: string, path: string) {
+  try {
+    const res = await fetch(`${base(token)}${path}`, { method: "DELETE" })
+    return res.ok
+  } catch {
+    return false
   }
 }

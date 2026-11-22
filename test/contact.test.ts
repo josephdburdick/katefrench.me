@@ -26,6 +26,7 @@ type Lead = {
   company: string | null
   from_section: string | null
   status: string
+  notes: string
 }
 
 const leads = async () =>
@@ -281,6 +282,7 @@ describe("saving leads", () => {
       "id",
       "intent",
       "name",
+      "notes",
       "status",
     ])
     expect(lead.id).toMatch(
@@ -297,6 +299,7 @@ describe("saving leads", () => {
     expect(lead.company).toBe("Acme")
     expect(lead.from_section).toBe("numbers")
     expect(lead.status).toBe("new")
+    expect(lead.notes).toBe("")
   })
 
   it("stores a blank company as NULL", async () => {

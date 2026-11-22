@@ -5,6 +5,8 @@ import ContactPage from "./pages/ContactPage"
 import Home from "./pages/Home"
 import NotFound from "./pages/NotFound"
 import EditHome from "./pages/edit/EditHome"
+import EditLead from "./pages/edit/EditLead"
+import EditLeads from "./pages/edit/EditLeads"
 import EditNumbers from "./pages/edit/EditNumbers"
 import EditSection from "./pages/edit/EditSection"
 
@@ -15,5 +17,7 @@ export const router = createBrowserRouter([
   { path: "/edit/:token", element: <EditHome /> },
   { path: "/edit/:token/numbers", element: <EditNumbers /> },
   { path: "/edit/:token/sections/:key", element: <EditSection /> },
+  { path: "/edit/:token/leads", element: <EditLeads /> },
+  { path: "/edit/:token/leads/:id", element: <EditLead /> },
   { path: "*", element: <NotFound /> },
 ])

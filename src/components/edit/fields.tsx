@@ -107,7 +107,7 @@ export function NumberField({
   )
 }
 
-const STATUS_TEXT: Record<SaveStatus, string> = {
+export const SAVE_STATUS_TEXT: Record<SaveStatus, string> = {
   idle: "",
   saving: "Saving…",
   saved: "Saved.",
@@ -159,7 +159,7 @@ export function SaveBar({
           Save
         </Button>
         <p aria-live="polite" className="font-semibold">
-          {STATUS_TEXT[status]}
+          {SAVE_STATUS_TEXT[status]}
         </p>
       </div>
     </div>

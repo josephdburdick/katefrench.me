@@ -1,19 +1,19 @@
-import type { EditErrors } from "@/lib/edit-content"
+import type { EditContent, EditErrors } from "@/lib/edit-content"
 import { useEffect, useState } from "react"
 
-import { type LoadState, loadEditContent, saveEdit } from "./api"
+import { type LoadState, loadEdit, saveEdit } from "./api"
 
-export function useEditContent(token: string) {
+export function useEditLoad<T>(token: string, path: string) {
   const [attempt, setAttempt] = useState(0)
-  const [state, setState] = useState<LoadState>({ status: "loading" })
+  const [state, setState] = useState<LoadState<T>>({ status: "loading" })
 
   useEffect(() => {
     let active = true
-    loadEditContent(token).then((result) => active && setState(result))
+    loadEdit<T>(token, path).then((result) => active && setState(result))
     return () => {
       active = false
     }
-  }, [token, attempt])
+  }, [token, path, attempt])
 
   const retry = () => {
     setState({ status: "loading" })
@@ -22,6 +22,9 @@ export function useEditContent(token: string) {
 
   return { state, retry }
 }
+
+export const useEditContent = (token: string) =>
+  useEditLoad<EditContent>(token, "/content")
 
 export type SaveStatus = "idle" | "saving" | "saved" | "invalid" | "failed"
 

@@ -14,7 +14,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 - Vite, React 19 and TypeScript for the pages in `src/`; Tailwind and shadcn components in `src/components/ui/`.
 - One Cloudflare Worker in `worker/` using Hono. It serves the built pages as static assets and answers `/api/*`.
-- D1 for content, leads from the contact form, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
+- D1 for content, leads from the contact form with Kate's status and notes, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
 - pnpm, vitest, ESLint. Every job must leave these passing: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - `pnpm dev --port <port>` starts the pages and the Worker together with a local D1. On a fresh checkout, run `pnpm db:migrate:local` and then `pnpm seed:local` first.
 
@@ -45,6 +45,9 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 - D1 keeps only the token's SHA-256 hash, in the single-row `edit_token` table (`migrations/0004_edit_token.sql`). `worker/edit-token.ts` makes, hashes, compares and stores tokens.
 - `pnpm edit-link:local` makes a new token for the local D1, prints `/edit/<token>` once and makes the old link stop working. Like the seed, it refuses `--remote` and any other argument.
 - `dev-owner-token` works only when `LOCAL_SERVICES=1`. Anywhere else it is checked against the stored hash like any other token.
+- Leads: `/edit/<token>/leads` lists every lead (new ones first, each group newest first) under counts for this calendar month in New York and for each status, with a status filter on the page. `/edit/<token>/leads/<id>` shows every answer in `buildEmail`'s order (`answerPairs` in `src/lib/contact-form.ts`), a "Reply by email" `mailto:` link, a status and private notes to save, and a delete with an on-page confirm. Only the edit home links to them.
+- They use `GET /leads`, `GET /leads/:id`, `PUT /leads/:id` (`{ status, notes }` only) and `DELETE /leads/:id` (`worker/edit-leads.ts`), mounted on the `edit` app so the token check and headers run first. An unknown or over-64-character id gets the plain 404. The list leaves out email, answers and notes. Delete is for good: no soft delete or undo.
+- Statuses and their labels, `LEAD_LIMITS` (notes up to 5,000 characters, body capped like the other edit saves), `validateLeadUpdate`, `monthStart` and the response types live in `src/lib/leads.ts`. Notes are the `notes` column from `migrations/0005_lead_notes.sql`. Never log a lead's answers, name, email or notes.
 
 ## People
 
