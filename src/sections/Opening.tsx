@@ -25,7 +25,7 @@ export default function Opening() {
           <a
             className={cn(
               buttonVariants({ size: "lg" }),
-              "text-foreground px-8 text-base",
+              "px-8 text-base",
             )}
             href={intro.link.url}
           >

@@ -5,13 +5,13 @@ city:
   buttons:
     - text: Cold messages
       number: replies
-      phrase: cold messages get a reply.
+      phrase: of cold messages get a reply.
     - text: Sales meetings
       number: meetings
       phrase: sales meetings ends with a new client.
     - text: Demos
       number: demos
-      phrase: demos go on to onboarding.
+      phrase: of demos go on to onboarding.
   key: Each block is one in a hundred. The amber ones said yes.
 cta:
   text: "Building a team in New York? Tell me about the role."

@@ -27,6 +27,8 @@ type Block = {
 }
 
 const UNLIT_HEIGHT = 0.12
+// A full city hides its empty lots behind tall blocks, so blocks get shorter as more are lit.
+const CROWDED_SPAN = 0.4
 
 function tokenColor(name: string) {
   const [h, s, l] = getComputedStyle(document.documentElement)
@@ -58,8 +60,8 @@ export function createCityScene(
 
   const scene = new Scene()
   const camera = new OrthographicCamera(-8, 8, 6, -6, 0.1, 100)
-  camera.position.set(14, 11.5, 14)
-  camera.lookAt(0, 0.5, 0)
+  camera.position.set(13, 16.5, 13)
+  camera.lookAt(0, 0.3, 0)
   scene.add(new AmbientLight(0xffffff, 0.64 * Math.PI))
   const sun = new DirectionalLight(0xffffff, 0.52 * Math.PI)
   sun.position.set(4, 10, 7)
@@ -92,8 +94,10 @@ export function createCityScene(
     }
   })
 
+  let span = 1
+  let spanTarget = 1
   const apply = (b: Block) => {
-    b.mesh.scale.y = UNLIT_HEIGHT + (b.h - UNLIT_HEIGHT) * b.c
+    b.mesh.scale.y = UNLIT_HEIGHT + (b.h * span - UNLIT_HEIGHT) * b.c
     b.mesh.material.color.copy(low).lerp(high, b.c)
   }
 
@@ -112,7 +116,7 @@ export function createCityScene(
     if (!w || !h) return
     renderer.setSize(w, h, false)
     const aspect = w / h
-    let halfH = 4.8
+    let halfH = 5.9
     let halfW = halfH * aspect
     if (halfW < 7.5) {
       halfW = 7.5
@@ -130,6 +134,8 @@ export function createCityScene(
   let request = 0
   const frame = (now: number) => {
     request = 0
+    const ds = spanTarget - span
+    span = Math.abs(ds) > 0.002 ? span + ds * 0.14 : spanTarget
     for (const b of blocks) {
       if (b.next !== b.target && now >= b.at) b.target = b.next
       const d = b.target - b.c
@@ -157,6 +163,7 @@ export function createCityScene(
   return {
     light(count) {
       const now = performance.now()
+      spanTarget = 1 - (1 - CROWDED_SPAN) * (count / CELLS)
       for (const b of blocks) {
         b.next = b.rank < count ? 1 : 0
         b.at = now + b.rank * 9

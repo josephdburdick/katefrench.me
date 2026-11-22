@@ -103,17 +103,17 @@ export default function BookingPage() {
   }
 
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <Header />
-      <div className="container max-w-xl space-y-4 py-16">
+      <main className="container flex max-w-xl flex-1 flex-col justify-center gap-4 py-16">
         {body}
         <p>
           <a className="text-primary underline" href="/">
             Back to the home page
           </a>
         </p>
-      </div>
+      </main>
       <Footer />
-    </>
+    </div>
   )
 }

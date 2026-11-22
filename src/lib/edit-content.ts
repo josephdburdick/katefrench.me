@@ -7,7 +7,6 @@ export const EDIT_SECTIONS = [
   { key: "message", title: "The message that worked" },
   { key: "first-call", title: "The first call" },
   { key: "marketing", title: "More than the sales call" },
-  { key: "across-company", title: "Working across the company" },
   { key: "venues", title: "Why venues pick up" },
   { key: "closing", title: "Closing" },
 ] as const

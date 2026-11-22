@@ -80,7 +80,7 @@ beforeEach(async () => {
 })
 
 describe("the edit token", () => {
-  it("lets the right token load the eight homepage sections", async () => {
+  it("lets the right token load the seven homepage sections", async () => {
     const res = await req(editPath("/content"))
     expect(res.status).toBe(200)
     const data = await res.json<Data>()
@@ -419,11 +419,10 @@ describe("PUT /sections/:key", () => {
     expect((await row("closing"))?.updated_at).not.toBe(OLD)
   })
 
-  it("saves nested text, like the message's sentences and the empty quote", async () => {
+  it("saves nested text, like the message's pitch and the empty quote", async () => {
     const data = await load()
     const message = sectionBody(data.message)
-    message.attributes.email.paragraphs[0][1].text = "I sell tickets."
-    message.attributes.email.signoff[1] = "AdmitONE"
+    message.attributes.pitch[1].text = "and stay with you after."
     expect((await put(editPath("/sections/message"), message)).status).toBe(200)
     const firstCall = sectionBody(data["first-call"])
     firstCall.attributes.quote.text = "Kate picked up on show night."
@@ -431,8 +430,8 @@ describe("PUT /sections/:key", () => {
       (await put(editPath("/sections/first-call"), firstCall)).status,
     ).toBe(200)
     const saved = await publicContent()
-    expect(saved.message.attributes.email.paragraphs[0][1]).toEqual({
-      text: "I sell tickets.",
+    expect(saved.message.attributes.pitch[1]).toEqual({
+      text: "and stay with you after.",
       note: 2,
     })
     expect(saved["first-call"].attributes.quote.text).toBe(
@@ -441,12 +440,10 @@ describe("PUT /sections/:key", () => {
   })
 
   it("keeps saved Markdown sanitized on the public API", async () => {
-    const body = sectionBody((await load())["across-company"])
+    const body = sectionBody((await load())["new-york"])
     body.body = "<script>alert(1)</script><img src=x onerror=alert(1)>Hi"
-    expect((await put(editPath("/sections/across-company"), body)).status).toBe(
-      200,
-    )
-    const { html } = (await publicContent())["across-company"]
+    expect((await put(editPath("/sections/new-york"), body)).status).toBe(200)
+    const { html } = (await publicContent())["new-york"]
     expect(html).not.toContain("<script")
     expect(html).not.toContain("onerror")
   })
@@ -505,20 +502,14 @@ describe("PUT /sections/:key", () => {
     [
       "a changed note number",
       "message",
-      (b) => (b.attributes.email.paragraphs[0][0].note = 9),
-      "attributes.email.paragraphs.0.0.note",
+      (b) => (b.attributes.pitch[0].note = 9),
+      "attributes.pitch.0.note",
     ],
     [
       "a changed photo width",
       "venues",
       (b) => (b.attributes.roles[0].photo.width = 10),
       "attributes.roles.0.photo.width",
-    ],
-    [
-      "a filled processes count",
-      "across-company",
-      (b) => (b.attributes.processes.count = 3),
-      "attributes.processes.count",
     ],
     [
       "an added attribute key",

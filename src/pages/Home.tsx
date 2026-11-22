@@ -1,6 +1,5 @@
 import Footer from "@/components/global/Footer"
 import Header from "@/components/global/Header"
-import AcrossCompany from "@/sections/AcrossCompany"
 import Closing from "@/sections/Closing"
 import FirstCall from "@/sections/FirstCall"
 import Marketing from "@/sections/Marketing"
@@ -19,7 +18,6 @@ export default function Home() {
         <NewYork />
         <FirstCall />
         <Marketing />
-        <AcrossCompany />
         <Venues />
         <Closing />
       </main>

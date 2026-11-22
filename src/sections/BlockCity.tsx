@@ -28,6 +28,8 @@ export default function BlockCity({
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   )
   const [drawn, setDrawn] = useState(false)
+  const [auto, setAuto] = useState(true)
+  const [inView, setInView] = useState(false)
   const stage = useRef<HTMLDivElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const scene = useRef<CityScene | null>(null)
@@ -39,6 +41,17 @@ export default function BlockCity({
     litRef.current = lit
     scene.current?.light(lit)
   }, [lit])
+
+  useEffect(() => {
+    const stageEl = stage.current
+    if (!stageEl) return
+    const seen = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.5 },
+    )
+    seen.observe(stageEl)
+    return () => seen.disconnect()
+  }, [])
 
   useEffect(() => {
     const stageEl = stage.current
@@ -71,65 +84,93 @@ export default function BlockCity({
   }, [still])
 
   if (!choice) return null
-  const caption = captionFor(choice.item, choice.phrase)
+  const cycling = auto && !still && inView && choices.length > 1
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <div
-        role="group"
-        aria-label={city.label}
-        className="flex flex-wrap gap-2"
-      >
-        {choices.map((c, i) => (
-          <button
-            key={c.number}
-            type="button"
-            aria-pressed={i === selected}
-            onClick={() => setSelected(i)}
+    <div className="contents">
+      <div className="flex min-w-0 flex-col gap-3 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
+        <div
+          ref={stage}
+          aria-hidden="true"
+          className="relative aspect-[3/2] w-full"
+        >
+          <div
             className={cn(
-              "focus-visible:outline-primary cursor-pointer rounded-full border px-[0.9rem] py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2",
-              i === selected
-                ? "border-primary bg-primary text-foreground"
-                : "border-border bg-background text-foreground",
+              "mx-auto grid w-2/3 grid-cols-10 gap-1",
+              drawn && "invisible",
             )}
           >
-            {c.text}
-          </button>
-        ))}
-      </div>
-      <div
-        ref={stage}
-        aria-hidden="true"
-        className="relative aspect-[3/2] w-full"
-      >
-        <div
-          className={cn(
-            "mx-auto grid w-2/3 grid-cols-10 gap-1",
-            drawn && "invisible",
-          )}
-        >
-          {blocks.map((i) => (
-            <span
-              key={i}
+            {blocks.map((i) => (
+              <span
+                key={i}
+                className={cn(
+                  "aspect-square rounded-[3px] motion-safe:transition-colors motion-safe:duration-300",
+                  rank[i] < lit ? "bg-primary" : "bg-background",
+                )}
+              />
+            ))}
+          </div>
+          {!still && (
+            <canvas
+              ref={canvas}
+              aria-hidden="true"
               className={cn(
-                "aspect-square rounded-[3px] motion-safe:transition-colors motion-safe:duration-300",
-                rank[i] < lit ? "bg-primary" : "bg-background",
+                "absolute inset-0 size-full",
+                !drawn && "invisible",
               )}
             />
-          ))}
+          )}
         </div>
-        {!still && (
-          <canvas
-            ref={canvas}
-            aria-hidden="true"
-            className={cn("absolute inset-0 size-full", !drawn && "invisible")}
-          />
-        )}
+        <p className="text-foreground/70 text-center text-[0.8125rem]">
+          {city.key}
+        </p>
       </div>
-      <p aria-live="polite" className="text-[1.0625rem]">
-        <strong className="font-semibold">{caption.lead}</strong> {caption.rest}
-      </p>
-      <p className="text-foreground/70 text-[0.8125rem]">{city.key}</p>
+      <div className="flex min-w-0 flex-col gap-4 md:col-start-1 md:row-start-2">
+        <div
+          role="group"
+          aria-label={city.label}
+          className="-mx-4 flex flex-col gap-1"
+        >
+          {choices.map((c, i) => {
+            const caption = captionFor(c.item, c.phrase)
+            const active = i === selected
+            return (
+              <button
+                key={c.number}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setAuto(false)
+                  setSelected(i)
+                }}
+                className={cn(
+                  "focus-visible:outline-primary relative cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors motion-safe:duration-300",
+                  active
+                    ? "bg-background text-foreground"
+                    : "text-foreground/55 hover:text-foreground",
+                )}
+              >
+                <span className="block text-[0.8125rem] font-medium">
+                  {c.text}
+                </span>
+                <span className="block text-[1.0625rem]">
+                  <strong className="font-semibold">{caption.lead}</strong>{" "}
+                  {caption.rest}
+                </span>
+                {active && cycling && (
+                  <span
+                    aria-hidden="true"
+                    onAnimationEnd={() =>
+                      setSelected((n) => (n + 1) % choices.length)
+                    }
+                    className="bg-primary absolute inset-x-0 bottom-0 h-[3px] origin-left animate-[city-progress_5s_linear_forwards]"
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

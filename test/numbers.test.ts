@@ -59,20 +59,18 @@ describe("formatNumber", () => {
 })
 
 describe("captionFor", () => {
-  it("matches the concept's sentence for each button", () => {
+  it("reads as Kate states each number", () => {
     expect(captionText("Cold messages")).toBe(
-      "10 of every 100 cold messages get a reply.",
+      "10% of cold messages get a reply.",
     )
     expect(captionText("Sales meetings")).toBe(
-      "1 in 4 sales meetings ends with a new client. That is 25 of every 100.",
+      "1 in 4 sales meetings ends with a new client.",
     )
-    expect(captionText("Demos")).toBe(
-      "85 of every 100 demos go on to onboarding.",
-    )
+    expect(captionText("Demos")).toBe("85% of demos go on to onboarding.")
   })
 
-  it("puts the count in the bold lead", () => {
-    expect(captionFor(item("replies"), "x").lead).toBe("10 of every 100")
+  it("puts the number in the bold lead", () => {
+    expect(captionFor(item("replies"), "x").lead).toBe("10%")
     expect(captionFor(item("meetings"), "x").lead).toBe("1 in 4")
   })
 })

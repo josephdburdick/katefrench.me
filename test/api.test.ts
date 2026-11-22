@@ -24,7 +24,7 @@ describe("GET /api/content", () => {
     expect(res.headers.get("content-type")).toMatch(/^application\/json/)
     const data = await res.json<Content>()
     expect(Object.keys(data).sort()).toEqual(keys)
-    expect(keys).toHaveLength(14)
+    expect(keys).toHaveLength(13)
     for (const entry of Object.values(data)) {
       expect(Object.keys(entry).sort()).toEqual([
         "attributes",
@@ -54,7 +54,13 @@ describe("GET /api/content", () => {
       expect(cta.text.trim(), key).not.toBe("")
       expect(cta.draft, key).toBe(true)
     }
-    expect(draftKeys).toEqual(["closing", "first-call", "marketing", "message"])
+    expect(draftKeys).toEqual([
+      "closing",
+      "first-call",
+      "marketing",
+      "message",
+      "venues",
+    ])
   })
 
   it("serves Kate's four numbers", async () => {
@@ -81,17 +87,13 @@ describe("GET /api/content", () => {
     ])
   })
 
-  it("leaves the client quote and the processes count empty", async () => {
+  it("leaves the client quote empty", async () => {
     await seed()
     const data = await (await req("/api/content")).json<Content>()
     expect(data["first-call"].attributes.quote).toEqual({
       text: "",
       name: "",
       venue: "",
-    })
-    expect(data["across-company"].attributes.processes).toEqual({
-      count: null,
-      example: "",
     })
   })
 

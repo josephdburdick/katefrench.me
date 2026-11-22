@@ -31,16 +31,9 @@ const clamp = (n: number) => Math.min(100, Math.max(0, n))
 
 /**
  * The block city caption in two parts, so the page can put `lead` in bold:
- * "**10 of every 100** cold messages get a reply." or
- * "**1 in 4** sales meetings ends with a new client. That is 25 of every 100."
+ * "**10%** of cold messages get a reply." or
+ * "**1 in 4** sales meetings ends with a new client."
  */
 export function captionFor(item: NumberItem, phrase: string) {
-  const blocks = blocksFor(item)
-  if (item.kind === "ratio") {
-    return {
-      lead: formatNumber(item),
-      rest: `${phrase} That is ${blocks} of every 100.`,
-    }
-  }
-  return { lead: `${blocks} of every 100`, rest: phrase }
+  return { lead: formatNumber(item), rest: phrase }
 }

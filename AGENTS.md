@@ -20,7 +20,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 ## Content
 
-- Page content starts as Markdown with front matter in `content/*.md`, one file per `content` row: `about`, `contact`, `cv`, `experience`, `intro` and `site` from the old site, and `numbers`, `new-york`, `message`, `first-call`, `marketing`, `across-company`, `venues` and `closing` for the homepage.
+- Page content starts as Markdown with front matter in `content/*.md`, one file per `content` row: `about`, `contact`, `cv`, `experience`, `intro` and `site` from the old site, and `numbers`, `new-york`, `message`, `first-call`, `marketing`, `venues` and `closing` for the homepage.
 - `draft: true` in a file's front matter marks wording Kate has not approved yet. The seed moves it out of the attributes into the row's `draft` column (`migrations/0002_content_draft.sql`). The page never shows it; it is for the edit screen.
 - A nested `draft: true`, as in `cta: { text, draft: true }`, marks just that piece of wording as unapproved. It stays in the attributes, and the row's `draft` column is unchanged.
 - `pnpm seed:local` replaces every row of the local `content` table with those files (`scripts/seed-*.ts`). It refuses `--remote` and any other argument.
@@ -48,7 +48,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 ## Edit link
 
-- Kate's screens are `/edit/<token>` (home), `/edit/<token>/numbers` and `/edit/<token>/sections/<key>` (`src/pages/edit/`, `src/components/edit/`). They cover the eight homepage sections only: the four numbers, every text field, and each section's draft flag.
+- Kate's screens are `/edit/<token>` (home), `/edit/<token>/numbers` and `/edit/<token>/sections/<key>` (`src/pages/edit/`, `src/components/edit/`). They cover the seven homepage sections only: the four numbers, every text field, and each section's draft flag.
 - They load and save through `/api/edit/<token>/...` (`worker/edit.ts`): `GET /content`, `PUT /numbers` and `PUT /sections/:key`. `requireEditToken` checks the token first; a wrong, missing or too-long token gets the same `{ "error": "not found" }` 404 as any unknown API path. Every edit response carries `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer` and `Cache-Control: no-store`. Never log the token or the request path.
 - Section keys, titles, limits, number ranges, locked paths and the checks live in `src/lib/edit-content.ts`, shared by the screens and the Worker like `contact-form.ts`. A section save may change only string leaves of the stored attributes; ids, `kind`, button numbers, photo `src`, the closing `url` and non-string values stay as stored.
 - D1 keeps only the token's SHA-256 hash, in the single-row `edit_token` table (`migrations/0004_edit_token.sql`). `worker/edit-token.ts` makes, hashes, compares and stores tokens.

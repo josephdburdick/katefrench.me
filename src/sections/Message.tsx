@@ -4,15 +4,14 @@ import { useApi } from "@/components/providers/ContentProvider"
 import { cn } from "@/lib/utils"
 import { Fragment } from "react"
 
-type Subject = { label: string; text: string }
-type Sentence = { text: string; note?: number }
+type Phrase = { text: string; note: number }
 type Note = { lead: string; text: string }
 
 function Marker({ n, className }: { n: number; className?: string }) {
   return (
     <span
       className={cn(
-        "bg-primary text-foreground inline-grid size-[1.3rem] place-items-center rounded-full text-[0.6875rem] font-bold",
+        "bg-primary text-primary-foreground inline-grid size-[1.3rem] shrink-0 place-items-center rounded-full font-sans text-[0.6875rem] font-bold",
         className,
       )}
     >
@@ -23,55 +22,30 @@ function Marker({ n, className }: { n: number; className?: string }) {
 
 export default function Message() {
   const { data } = useApi()
-  const { heading, subjects, email, notes } = data.message.attributes
-  const pair: Subject[] = [subjects.before, subjects.after]
+  const { heading, intro, pitch, notes } = data.message.attributes
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <SubHeading as="h3">{heading}</SubHeading>
-        <div className="grid gap-4 md:grid-cols-2">
-          {pair.map((subject) => (
-            <div
-              key={subject.label}
-              className="bg-background flex min-w-0 flex-col gap-2 rounded-xl px-[1.1rem] py-4"
-            >
-              <small className="text-foreground/70 text-xs font-semibold">
-                {subject.label}
-              </small>
-              <p className="text-[0.9375rem] font-medium">{subject.text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="grid items-start gap-x-12 gap-y-10 md:grid-cols-2">
-        <div className="bg-background flex flex-col gap-[0.9rem] rounded-xl p-[clamp(1rem,3vw,1.75rem)] text-[0.9375rem]">
-          <p className="border-border border-b pb-3 font-semibold">
-            {email.subject}
-          </p>
-          <p>{email.greeting}</p>
-          {email.paragraphs.map((sentences: Sentence[], i: number) => (
-            <p key={i}>
-              {sentences.map((s, j) => (
-                <Fragment key={j}>
-                  {j > 0 && " "}
-                  {s.text}
-                  {s.note != null && (
-                    <Marker n={s.note} className="ml-1 align-[0.1em]" />
-                  )}
+      <div className="grid items-start gap-x-12 gap-y-8 md:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-4">
+          <SubHeading as="h3">{heading}</SubHeading>
+          <p className="text-[1.0625rem]">{intro}</p>
+          <blockquote className="bg-background font-display rounded-xl p-[clamp(1.25rem,3vw,2rem)] text-[clamp(1.5rem,2.2vw+0.8rem,2.25rem)] leading-[1.15] tracking-[-0.01em] text-balance">
+            {pitch.map((phrase: Phrase, i: number) => {
+              const cut = phrase.text.trimEnd().lastIndexOf(" ") + 1
+              return (
+                <Fragment key={i}>
+                  {i > 0 && " "}
+                  {phrase.text.slice(0, cut)}
+                  <span className="whitespace-nowrap">
+                    {phrase.text.slice(cut)}
+                    <Marker n={phrase.note} className="ml-1.5 align-[0.3em]" />
+                  </span>
                 </Fragment>
-              ))}
-            </p>
-          ))}
-          <p>
-            {email.signoff.map((line: string, i: number) => (
-              <Fragment key={i}>
-                {i > 0 && <br />}
-                {line}
-              </Fragment>
-            ))}
-          </p>
+              )
+            })}
+          </blockquote>
         </div>
-        <ol className="flex flex-col gap-4">
+        <ol className="flex flex-col gap-5 md:self-end">
           {notes.map((note: Note, i: number) => (
             <li
               key={i}

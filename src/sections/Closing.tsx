@@ -5,7 +5,7 @@ export default function Closing() {
   const { heading, text, contact } = data.closing.attributes
   const { linkedin, resume } = data.contact.attributes.links
   return (
-    <section className="bg-primary text-foreground flex flex-col gap-6 rounded-3xl p-[clamp(1.5rem,5vw,4.5rem)]">
+    <section className="bg-primary text-primary-foreground flex flex-col gap-6 rounded-3xl p-[clamp(1.5rem,5vw,4.5rem)]">
       <h2 className="font-display max-w-[16ch] text-[clamp(2.25rem,4vw+1.5rem,4.25rem)] leading-none font-semibold tracking-[-0.035em] text-balance">
         {heading}
       </h2>

@@ -12,7 +12,7 @@ export default function NextStep({ source }: { source: Source }) {
       href={nextStepHref(source)}
       className={cn(
         buttonVariants({ size: "lg" }),
-        "text-foreground focus-visible:ring-foreground focus-visible:ring-offset-background max-w-full self-start text-left text-[0.9375rem] whitespace-normal focus-visible:ring-2 focus-visible:ring-offset-2",
+        "focus-visible:ring-foreground focus-visible:ring-offset-background max-w-full self-start text-left text-[0.9375rem] whitespace-normal focus-visible:ring-2 focus-visible:ring-offset-2",
       )}
     >
       {text}

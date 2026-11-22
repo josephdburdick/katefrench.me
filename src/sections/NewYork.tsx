@@ -13,7 +13,7 @@ export default function NewYork() {
       id="new-york"
       className="bg-secondary flex scroll-mt-4 flex-col gap-12 rounded-3xl p-[clamp(1.25rem,4vw,4rem)]"
     >
-      <div className="grid items-start gap-x-12 gap-y-10 md:grid-cols-2">
+      <div className="grid items-start gap-x-12 gap-y-8 md:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">
           <SubHeading>{attributes.heading}</SubHeading>
           <div

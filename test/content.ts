@@ -1,7 +1,6 @@
 import { env } from "cloudflare:workers"
 
 import about from "../content/about.md?raw"
-import acrossCompany from "../content/across-company.md?raw"
 import closing from "../content/closing.md?raw"
 import contact from "../content/contact.md?raw"
 import cv from "../content/cv.md?raw"
@@ -19,7 +18,6 @@ import { seedContent } from "../scripts/seed-write.ts"
 
 export const files = {
   about,
-  "across-company": acrossCompany,
   closing,
   contact,
   cv,
@@ -36,6 +34,12 @@ export const files = {
 
 export const keys = Object.keys(files).sort()
 
-export const draftKeys = ["closing", "first-call", "marketing", "message"]
+export const draftKeys = [
+  "closing",
+  "first-call",
+  "marketing",
+  "message",
+  "venues",
+]
 
 export const seed = () => seedContent(env, contentRows(files))

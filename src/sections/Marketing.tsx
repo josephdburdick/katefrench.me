@@ -1,43 +1,40 @@
 import SubHeading from "@/components/global/SubHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 
-type Item = { title: string; text: string }
-
-const pageOffsets = ["", "mt-5", "mt-10"]
+type Item = { company: string; title: string; text: string; parts: string[] }
 
 export default function Marketing() {
   const { data } = useApi()
   const { heading, items } = data.marketing.attributes
   return (
-    <section className="grid items-start gap-x-12 gap-y-10 md:grid-cols-2">
-      <div className="flex min-w-0 flex-col gap-4">
-        <SubHeading>{heading}</SubHeading>
-        <ul>
-          {items.map((item: Item, i: number) => (
-            <li
-              key={i}
-              className="border-border border-t py-[0.9rem] text-[0.9375rem] last:border-b"
-            >
-              <strong className="block font-semibold">{item.title}</strong>
-              {item.text}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div aria-hidden="true" className="grid grid-cols-3 items-start gap-3">
-        {pageOffsets.map((offset, i) => (
-          <div
+    <section className="flex flex-col gap-8">
+      <SubHeading>{heading}</SubHeading>
+      <ul className="grid gap-4 md:grid-cols-2">
+        {items.map((item: Item, i: number) => (
+          <li
             key={i}
-            className={`border-border bg-secondary flex min-w-0 flex-col gap-[0.45rem] rounded-[0.6rem] border p-[0.7rem] ${offset}`}
+            className="bg-secondary flex min-w-0 flex-col gap-3 rounded-2xl p-[clamp(1.25rem,3vw,2rem)]"
           >
-            <i className="bg-primary block h-13 rounded-[0.35rem] opacity-85" />
-            <b className="bg-foreground block h-[0.6rem] w-4/5 rounded-[2px]" />
-            <span className="bg-border block h-[0.3rem] rounded-[2px]" />
-            <span className="bg-border block h-[0.3rem] w-3/5 rounded-[2px]" />
-            <em className="bg-primary mt-[0.2rem] block h-[0.9rem] w-[45%] rounded-[0.25rem]" />
-          </div>
+            <span className="text-foreground/70 text-[0.8125rem] font-medium">
+              {item.company}
+            </span>
+            <h3 className="font-display text-primary text-[1.625rem] leading-[1.1] font-medium tracking-[-0.02em] text-balance">
+              {item.title}
+            </h3>
+            <p className="text-[0.9375rem]">{item.text}</p>
+            <ul className="mt-auto flex flex-wrap gap-2 pt-2">
+              {item.parts.map((part, j) => (
+                <li
+                  key={j}
+                  className="bg-background rounded-full px-3 py-1 text-[0.8125rem] font-medium"
+                >
+                  {part}
+                </li>
+              ))}
+            </ul>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }

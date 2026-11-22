@@ -20,7 +20,7 @@ const attributesOf = async (key: string) => {
 
 describe("seed", () => {
   it("writes one row per content file", async () => {
-    expect(await seed()).toBe(14)
+    expect(await seed()).toBe(13)
     expect((await rows()).map((r) => r.key)).toEqual(keys)
   })
 
@@ -61,10 +61,10 @@ describe("seed", () => {
     ])
   })
 
-  it("gives the same 14 rows when run twice", async () => {
+  it("gives the same 13 rows when run twice", async () => {
     await seed()
     await seed()
-    expect(await rows()).toHaveLength(14)
+    expect(await rows()).toHaveLength(13)
   })
 })
 
