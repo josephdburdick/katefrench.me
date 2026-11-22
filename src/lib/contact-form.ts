@@ -135,6 +135,21 @@ export const LIMITS = {
   body: 49152,
 }
 
+/** `website` is a trap field: people never see it, so any value means a bot. */
+export type ContactRequest = {
+  answers: Answers
+  token: string
+  website: string
+}
+
+export type ContactResponse =
+  | { ok: true }
+  | {
+      ok: false
+      error: "origin" | "too_large" | "invalid" | "turnstile" | "send"
+      fields?: Errors
+    }
+
 export const SENDER = { email: "form@katefrench.me", name: "katefrench.me" }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

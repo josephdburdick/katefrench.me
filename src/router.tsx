@@ -1,11 +1,13 @@
 import { createBrowserRouter } from "react-router"
 
 import CVPage from "./pages/CVPage"
+import ContactPage from "./pages/ContactPage"
 import Home from "./pages/Home"
 import NotFound from "./pages/NotFound"
 
 export const router = createBrowserRouter([
   { path: "/", element: <Home /> },
   { path: "/cv", element: <CVPage /> },
+  { path: "/contact", element: <ContactPage /> },
   { path: "*", element: <NotFound /> },
 ])

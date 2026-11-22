@@ -1,8 +1,7 @@
 import { Hono } from "hono"
 
 import {
-  type Answers,
-  type Errors,
+  type ContactResponse,
   LIMITS,
   SENDER,
   buildEmail,
@@ -12,21 +11,6 @@ import {
 import type { EmailSender } from "./email"
 import type { Env } from "./env"
 import type { TurnstileVerifier } from "./turnstile"
-
-/** `website` is a trap field: people never see it, so any value means a bot. */
-export type ContactRequest = {
-  answers: Answers
-  token: string
-  website: string
-}
-
-export type ContactResponse =
-  | { ok: true }
-  | {
-      ok: false
-      error: "origin" | "too_large" | "invalid" | "turnstile" | "send"
-      fields?: Errors
-    }
 
 export type ContactServices = {
   email: EmailSender
