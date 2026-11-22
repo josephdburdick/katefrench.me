@@ -1,5 +1,9 @@
 export type Intent = "hiring" | "venue" | "content" | "other"
 
+/** The homepage sections that link to `/contact`, sent back as `from`. */
+export const SOURCES = ["numbers", "new-york", "message", "venues"] as const
+export type Source = (typeof SOURCES)[number]
+
 /** The order a visitor sees the steps in. Steps a visitor doesn't need are left out by `stepsFor`. */
 export const STEP_ORDER = ["intent", "details", "message", "reply"] as const
 export type StepId = (typeof STEP_ORDER)[number]
@@ -117,6 +121,9 @@ export const FIELD_LABELS = {
   company: "Company or venue",
 }
 
+export const PRIVACY_NOTE =
+  "I keep your message so I can reply to you, and I don't do anything else with it."
+
 export const FIELD_STEP: Record<Field, StepId> = {
   intent: "intent",
   details: "details",
@@ -140,6 +147,7 @@ export type ContactRequest = {
   answers: Answers
   token: string
   website: string
+  from: Source | null
 }
 
 export type ContactResponse =
@@ -167,6 +175,37 @@ export function emptyAnswers(): Answers {
 
 export function isIntent(value: unknown): value is Intent {
   return INTENTS.some((intent) => intent.value === value)
+}
+
+export function isSource(value: unknown): value is Source {
+  return SOURCES.some((source) => source === value)
+}
+
+export const SOURCE_INTENT: Record<Source, Intent> = {
+  numbers: "hiring",
+  "new-york": "hiring",
+  message: "venue",
+  venues: "venue",
+}
+
+export function nextStepHref(source: Source): string {
+  const params = new URLSearchParams({
+    intent: SOURCE_INTENT[source],
+    from: source,
+  })
+  return `/contact?${params}`
+}
+
+export function prefillFrom(params: URLSearchParams): {
+  intent: Intent | null
+  from: Source | null
+} {
+  const intent = params.get("intent")
+  const from = params.get("from")
+  return {
+    intent: isIntent(intent) ? intent : null,
+    from: isSource(from) ? from : null,
+  }
 }
 
 export function intentOption(intent: Intent): IntentOption {

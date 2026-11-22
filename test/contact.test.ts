@@ -1,6 +1,6 @@
-import { exports } from "cloudflare:workers"
+import { exports, env as workerEnv } from "cloudflare:workers"
 import { Hono } from "hono"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { LIMITS, SENDER } from "../src/lib/contact-form"
 import { contactApp } from "../worker/contact"
@@ -14,7 +14,22 @@ import type { Env } from "../worker/env"
 import { DUMMY_TOKEN, localTurnstile, siteverify } from "../worker/turnstile"
 
 const URL = "https://katefrench.me/api/contact"
-const env = { CONTACT_TO: "kate@example.com" } as Env
+const env = { CONTACT_TO: "kate@example.com", DB: workerEnv.DB } as Env
+
+type Lead = {
+  id: string
+  created_at: string
+  intent: string
+  answers: string
+  name: string
+  email: string
+  company: string | null
+  from_section: string | null
+  status: string
+}
+
+const leads = async () =>
+  (await workerEnv.DB.prepare("SELECT * FROM leads").all<Lead>()).results
 
 const answers = {
   intent: "hiring",
@@ -55,6 +70,10 @@ function setup(
 }
 
 describe("POST /api/contact", () => {
+  beforeEach(async () => {
+    await workerEnv.DB.prepare("DELETE FROM leads").run()
+  })
+
   it("answers anything but POST with 405", async () => {
     const { app } = setup()
     const res = await app.request(URL, {}, env)
@@ -228,6 +247,151 @@ describe("POST /api/contact", () => {
       answers: { ...answers, to: "evil@example.com" },
     })
     expect(email.sent.map((m) => m.to)).toEqual(["kate@example.com"])
+  })
+})
+
+describe("saving leads", () => {
+  beforeEach(async () => {
+    await workerEnv.DB.prepare("DELETE FROM leads").run()
+  })
+
+  it("stores a lead with every field", async () => {
+    const { post } = setup()
+    const res = await post({
+      ...valid,
+      from: "numbers",
+      answers: {
+        ...answers,
+        message: "  We need someone to open New York.  ",
+        name: "  Sam Lee ",
+        email: " sam@example.com ",
+        company: " Acme ",
+      },
+    })
+    expect(res.status).toBe(200)
+    const rows = await leads()
+    expect(rows).toHaveLength(1)
+    const [lead] = rows
+    expect(Object.keys(lead).sort()).toEqual([
+      "answers",
+      "company",
+      "created_at",
+      "email",
+      "from_section",
+      "id",
+      "intent",
+      "name",
+      "status",
+    ])
+    expect(lead.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    )
+    expect(new Date(lead.created_at).toISOString()).toBe(lead.created_at)
+    expect(lead.intent).toBe("hiring")
+    expect(JSON.parse(lead.answers)).toEqual({
+      details: answers.details,
+      message: "We need someone to open New York.",
+    })
+    expect(lead.name).toBe("Sam Lee")
+    expect(lead.email).toBe("sam@example.com")
+    expect(lead.company).toBe("Acme")
+    expect(lead.from_section).toBe("numbers")
+    expect(lead.status).toBe("new")
+  })
+
+  it("stores a blank company as NULL", async () => {
+    const { post } = setup()
+    await post({ ...valid, answers: { ...answers, company: "  " } })
+    expect((await leads())[0].company).toBeNull()
+  })
+
+  it("stores an unknown or missing from as NULL", async () => {
+    const { post } = setup()
+    for (const body of [
+      { ...valid, from: "evil" },
+      { ...valid, from: 7 },
+      { ...valid, from: "Numbers" },
+      valid,
+    ]) {
+      const res = await post(body)
+      expect(res.status).toBe(200)
+    }
+    const rows = await leads()
+    expect(rows).toHaveLength(4)
+    expect(rows.map((r) => r.from_section)).toEqual([null, null, null, null])
+  })
+
+  it("stores no row when a check fails", async () => {
+    const { app, post } = setup()
+    await app.request(URL, {}, env)
+    await post(valid, { Origin: "https://evil.example" })
+    await post({ ...valid, padding: "a".repeat(LIMITS.body) })
+    await post(valid, { "Content-Length": String(LIMITS.body + 1) })
+    await post("not json")
+    await post({ ...valid, website: "https://spam.example" })
+    await post({ ...valid, token: "wrong-token" })
+    await post({ ...valid, answers: { ...answers, email: "not-an-email" } })
+    expect(await leads()).toEqual([])
+  })
+
+  it("keeps the lead when the email fails", async () => {
+    vi.spyOn(console, "error").mockImplementationOnce(() => {})
+    const { post } = setup({
+      send: async () => {
+        throw new Error("down")
+      },
+    })
+    const res = await post({ ...valid, from: "venues" })
+    expect(res.status).toBe(502)
+    expect(await res.json()).toEqual({ ok: false, error: "send" })
+    const rows = await leads()
+    expect(rows).toHaveLength(1)
+    expect(rows[0].status).toBe("new")
+  })
+
+  it("keeps the lead when CONTACT_TO is unset", async () => {
+    vi.spyOn(console, "error").mockImplementationOnce(() => {})
+    const { post } = setup(localEmail(), { CONTACT_TO: "" })
+    const res = await post(valid)
+    expect(res.status).toBe(502)
+    expect(await res.json()).toEqual({ ok: false, error: "send" })
+    const rows = await leads()
+    expect(rows).toHaveLength(1)
+    expect(rows[0].status).toBe("new")
+  })
+
+  it("still sends the email when the insert fails, without logging the answers", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    const email = localEmail()
+    const broken = {
+      prepare: () => {
+        throw new Error(`no table for ${answers.name} ${answers.email}`)
+      },
+    } as unknown as D1Database
+    const { post } = setup(email, { DB: broken })
+    const res = await post(valid)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(email.sent).toHaveLength(1)
+    expect(log).toHaveBeenCalledWith("contact: lead insert failed", "unknown")
+    const logged = JSON.stringify(log.mock.calls)
+    for (const value of [
+      answers.name,
+      answers.email,
+      answers.message,
+      answers.company,
+    ]) {
+      expect(logged).not.toContain(value)
+    }
+    log.mockRestore()
+  })
+
+  it("refuses a status outside the five values", async () => {
+    await expect(
+      workerEnv.DB.prepare(
+        "INSERT INTO leads (id, created_at, intent, answers, name, email, status) VALUES ('x', 'now', 'hiring', '{}', 'n', 'e', 'pending')",
+      ).run(),
+    ).rejects.toThrow(/CHECK/)
   })
 })
 

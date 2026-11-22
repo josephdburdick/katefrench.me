@@ -1,3 +1,4 @@
+import NextStep from "@/components/global/NextStep"
 import SubHeading from "@/components/global/SubHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 
@@ -52,6 +53,7 @@ export default function Venues() {
           </li>
         ))}
       </ul>
+      <NextStep source="venues" />
     </section>
   )
 }

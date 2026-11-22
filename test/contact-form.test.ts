@@ -4,9 +4,15 @@ import {
   type Answers,
   INTENTS,
   LIMITS,
+  PRIVACY_NOTE,
+  SOURCES,
+  SOURCE_INTENT,
   buildEmail,
   emptyAnswers,
   firstStepWithError,
+  isSource,
+  nextStepHref,
+  prefillFrom,
   stepLabel,
   stepsFor,
   toAnswers,
@@ -292,5 +298,87 @@ describe("buildEmail", () => {
       "subject",
       "text",
     ])
+  })
+})
+
+describe("isSource", () => {
+  it("accepts each source", () => {
+    for (const source of SOURCES) expect(isSource(source)).toBe(true)
+  })
+
+  it("rejects anything else", () => {
+    for (const value of [undefined, null, 1, {}, ["numbers"], "evil", ""]) {
+      expect(isSource(value)).toBe(false)
+    }
+  })
+})
+
+describe("prefillFrom", () => {
+  const prefill = (query: string) => prefillFrom(new URLSearchParams(query))
+
+  it("reads a known intent and source", () => {
+    expect(prefill("intent=venue&from=numbers")).toEqual({
+      intent: "venue",
+      from: "numbers",
+    })
+  })
+
+  it("drops an unknown intent", () => {
+    expect(prefill("intent=bogus&from=numbers")).toEqual({
+      intent: null,
+      from: "numbers",
+    })
+  })
+
+  it("drops an unknown source", () => {
+    expect(prefill("intent=hiring&from=evil")).toEqual({
+      intent: "hiring",
+      from: null,
+    })
+  })
+
+  it("gives nulls when both are missing", () => {
+    expect(prefill("")).toEqual({ intent: null, from: null })
+  })
+
+  it("treats mixed case or extra whitespace as unknown", () => {
+    for (const query of [
+      "intent=Hiring&from=Numbers",
+      "intent=%20hiring&from=numbers%20",
+      "intent=HIRING&from=NEW-YORK",
+    ]) {
+      expect(prefill(query), query).toEqual({ intent: null, from: null })
+    }
+  })
+})
+
+describe("calls to action", () => {
+  it("maps each section to its intent", () => {
+    expect(SOURCE_INTENT).toEqual({
+      numbers: "hiring",
+      "new-york": "hiring",
+      message: "venue",
+      venues: "venue",
+    })
+  })
+
+  it("links each section to a prefilled /contact", () => {
+    expect(SOURCES.map(nextStepHref)).toEqual([
+      "/contact?intent=hiring&from=numbers",
+      "/contact?intent=hiring&from=new-york",
+      "/contact?intent=venue&from=message",
+      "/contact?intent=venue&from=venues",
+    ])
+  })
+
+  it("opens a known intent on the step after it", () => {
+    expect(stepsFor("hiring")[1]).toBe("details")
+    expect(stepsFor("venue")[1]).toBe("details")
+  })
+
+  it("has the privacy sentence", () => {
+    expect(PRIVACY_NOTE).toBe(
+      "I keep your message so I can reply to you, and I don't do anything else with it.",
+    )
   })
 })

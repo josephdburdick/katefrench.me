@@ -5,11 +5,13 @@ import {
   LIMITS,
   SENDER,
   buildEmail,
+  isSource,
   toAnswers,
   validateAll,
 } from "../src/lib/contact-form"
 import type { EmailSender } from "./email"
 import type { Env } from "./env"
+import { insertLead } from "./leads"
 import type { TurnstileVerifier } from "./turnstile"
 
 export type ContactServices = {
@@ -80,6 +82,17 @@ export function contactApp(
     const fields = validateAll(answers)
     if (Object.keys(fields).length > 0) {
       return reply(400, { ok: false, error: "invalid", fields })
+    }
+
+    const from = isSource(body.from) ? body.from : null
+    // The email still goes out when the insert fails: Kate hearing about it matters more than the row.
+    try {
+      await insertLead(c.env.DB, answers, from)
+    } catch (error) {
+      console.error(
+        "contact: lead insert failed",
+        (error as { code?: string })?.code ?? "unknown",
+      )
     }
 
     if (!c.env.CONTACT_TO) {

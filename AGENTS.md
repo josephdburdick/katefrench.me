@@ -14,7 +14,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 - Vite, React 19 and TypeScript for the pages in `src/`; Tailwind and shadcn components in `src/components/ui/`.
 - One Cloudflare Worker in `worker/` using Hono. It serves the built pages as static assets and answers `/api/*`.
-- D1 for content, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
+- D1 for content, leads from the contact form, booking requests and the edit link's token hash, with numbered migrations in `migrations/`. Never edit a migration that is already on `rebuild`; add a new one.
 - pnpm, vitest, ESLint. Every job must leave these passing: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - `pnpm dev --port <port>` starts the pages and the Worker together with a local D1. On a fresh checkout, run `pnpm db:migrate:local` and then `pnpm seed:local` first.
 
@@ -22,6 +22,7 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 
 - Page content starts as Markdown with front matter in `content/*.md`, one file per `content` row: `about`, `contact`, `cv`, `experience`, `intro` and `site` from the old site, and `numbers`, `new-york`, `message`, `first-call`, `marketing`, `across-company`, `venues` and `closing` for the homepage.
 - `draft: true` in a file's front matter marks wording Kate has not approved yet. The seed moves it out of the attributes into the row's `draft` column (`migrations/0002_content_draft.sql`). The page never shows it; it is for the edit screen.
+- A nested `draft: true`, as in `cta: { text, draft: true }`, marks just that piece of wording as unapproved. It stays in the attributes, and the row's `draft` column is unchanged.
 - `pnpm seed:local` replaces every row of the local `content` table with those files (`scripts/seed-*.ts`). It refuses `--remote` and any other argument.
 - `GET /api/content` (`worker/content.ts`) returns `{ [key]: { attributes, content, html, draft } }`, where `html` is the Markdown body rendered and sanitized and `draft` is a boolean. The pages load it once through `ContentProvider` and read it with `useApi()`.
 - The numbers strip and the block city format and count Kate's numbers with `src/lib/numbers.ts`.
@@ -30,7 +31,8 @@ Reference material sits outside the repo, next to the main checkout, in `../refe
 ## Contact form
 
 - Questions, options, limits, step order and checks live in `src/lib/contact-form.ts`. The `/contact` page (`src/components/contact/`) and the Worker both import it; never copy them into a component.
-- `POST /api/contact` (`worker/contact.ts`) checks, in order: method, `Origin`, body size, the `website` trap field, Turnstile, then `validateAll`. It sends one email to `CONTACT_TO` and stores nothing.
+- `POST /api/contact` (`worker/contact.ts`) checks, in order: method, `Origin`, body size, the `website` trap field, Turnstile, then `validateAll`. Only then does it store a lead in the `leads` table (`worker/leads.ts`, `migrations/0003_leads.sql`) and send one email to `CONTACT_TO`. The lead stays saved when the email fails. It never stores an IP address, user agent or Turnstile token, and never logs the answers.
+- `numbers`, `new-york`, `message` and `venues` each end with a call to action (`src/components/global/NextStep.tsx`, wording in the file's `cta`) that links to `/contact?intent=<intent>&from=<section>`. `SOURCES` in `src/lib/contact-form.ts` is the closed list of `from` values, and `SOURCE_INTENT` fixes each section's intent. `/contact` reads both with `prefillFrom`: a known intent starts on the step after it, and the request sends `from` (or `null` for an unknown one), stored as `from_section`.
 - Email goes through `EmailSender` (`worker/email.ts`: `cloudflareEmail`, stand-in `localEmail`) and Turnstile through `TurnstileVerifier` (`worker/turnstile.ts`: `siteverify`, stand-in `localTurnstile`, which accepts only the test token).
 - `LOCAL_SERVICES=1` picks the stand-ins (set in `.dev.vars` and the vitest bindings). `CONTACT_TO` is the recipient and `TURNSTILE_SECRET` the Turnstile secret, both Worker secrets. `VITE_TURNSTILE_SITE_KEY` is the page's site key; unset, it uses Cloudflare's always-pass test key.
 - When sending fails, the page shows `contact.attributes.email` from `content/contact.md` with a Copy button, or a plain retry message when it is unset.
