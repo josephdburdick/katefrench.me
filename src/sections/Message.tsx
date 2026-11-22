@@ -11,7 +11,7 @@ function Marker({ n, className }: { n: number; className?: string }) {
   return (
     <span
       className={cn(
-        "bg-primary text-primary-foreground inline-grid size-[1.3rem] place-items-center rounded-full text-[0.6875rem] font-bold",
+        "bg-primary text-foreground inline-grid size-[1.3rem] place-items-center rounded-full text-[0.6875rem] font-bold",
         className,
       )}
     >

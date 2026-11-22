@@ -23,7 +23,10 @@ export default function Opening() {
         />
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <a
-            className={cn(buttonVariants({ size: "lg" }), "px-8 text-base")}
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "text-foreground px-8 text-base",
+            )}
             href={intro.link.url}
           >
             {intro.link.text}

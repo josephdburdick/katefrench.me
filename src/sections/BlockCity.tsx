@@ -41,7 +41,7 @@ export default function BlockCity({
             className={cn(
               "focus-visible:outline-primary cursor-pointer rounded-full border px-[0.9rem] py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2",
               i === selected
-                ? "border-primary bg-primary text-primary-foreground"
+                ? "border-primary bg-primary text-foreground"
                 : "border-border bg-background text-foreground",
             )}
           >
