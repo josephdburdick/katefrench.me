@@ -1,5 +1,5 @@
 # Worker secrets for local development go in .dev.vars, one NAME=value per line.
-# Set LOCAL_SERVICES=1 locally so email and Turnstile use stand-ins.
+# Set LOCAL_SERVICES=1 locally so email, Turnstile and the calendar use stand-ins.
 LOCAL_SERVICES=
 CONTACT_TO=
 TURNSTILE_SECRET=

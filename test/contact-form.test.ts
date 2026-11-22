@@ -4,12 +4,14 @@ import {
   type Answers,
   INTENTS,
   LIMITS,
+  NO_CALL,
   PRIVACY_NOTE,
   SOURCES,
   SOURCE_INTENT,
   buildEmail,
   emptyAnswers,
   firstStepWithError,
+  formatCallTime,
   isSource,
   nextStepHref,
   prefillFrom,
@@ -28,6 +30,7 @@ const hiring = (overrides: Partial<Answers> = {}): Answers => ({
   name: "Sam Lee",
   email: "sam@example.com",
   company: "Acme",
+  time: NO_CALL,
   ...overrides,
 })
 
@@ -45,32 +48,33 @@ describe("intents", () => {
 describe("stepsFor", () => {
   it("skips the details step for other", () => {
     const steps = stepsFor("other")
-    expect(steps).toHaveLength(3)
+    expect(steps).toHaveLength(4)
     expect(steps).not.toContain("details")
-    expect(steps).toEqual(["intent", "message", "reply"])
+    expect(steps).toEqual(["intent", "message", "call", "reply"])
   })
 
-  it("has four steps for every intent with details", () => {
+  it("has five steps for every intent with details", () => {
     for (const intent of ["hiring", "venue", "content"] as const) {
       expect(stepsFor(intent)).toEqual([
         "intent",
         "details",
         "message",
+        "call",
         "reply",
       ])
     }
   })
 
-  it("shows four steps before an intent is picked", () => {
-    expect(stepsFor(null)).toHaveLength(4)
+  it("shows five steps before an intent is picked", () => {
+    expect(stepsFor(null)).toHaveLength(5)
   })
 })
 
 describe("stepLabel", () => {
   it("counts only the steps the visitor will see", () => {
-    expect(stepLabel(1, stepsFor("other"))).toBe("Step 2 of 3")
-    expect(stepLabel(1, stepsFor("hiring"))).toBe("Step 2 of 4")
-    expect(stepLabel(0, stepsFor("venue"))).toBe("Step 1 of 4")
+    expect(stepLabel(1, stepsFor("other"))).toBe("Step 2 of 4")
+    expect(stepLabel(1, stepsFor("hiring"))).toBe("Step 2 of 5")
+    expect(stepLabel(0, stepsFor("venue"))).toBe("Step 1 of 5")
   })
 })
 
@@ -115,6 +119,17 @@ describe("validateStep", () => {
         }),
       ).details,
     ).toBeTruthy()
+  })
+
+  it("needs a time or email only on the call step", () => {
+    expect(validateStep("call", hiring({ time: "" }))).toEqual({
+      time: "Pick a time, or choose email only.",
+    })
+    expect(validateStep("call", hiring({ time: NO_CALL }))).toEqual({})
+    expect(
+      validateStep("call", hiring({ time: "2026-11-23T14:00:00.000Z" })),
+    ).toEqual({})
+    expect(validateAll(hiring({ time: "" })).time).toBeTruthy()
   })
 
   it("needs no details for other", () => {
@@ -211,6 +226,7 @@ describe("validateAll", () => {
   it("points at the first step with an error", () => {
     const steps = stepsFor("hiring")
     expect(firstStepWithError(steps, { email: "x", message: "y" })).toBe(2)
+    expect(firstStepWithError(steps, { time: "x", email: "y" })).toBe(3)
     expect(firstStepWithError(steps, {})).toBe(-1)
   })
 })
@@ -218,7 +234,7 @@ describe("validateAll", () => {
 describe("toAnswers", () => {
   it("turns junk into empty answers", () => {
     for (const junk of [null, undefined, 1, "x", [], true]) {
-      expect(toAnswers(junk)).toEqual(emptyAnswers())
+      expect(toAnswers(junk)).toEqual({ ...emptyAnswers(), time: NO_CALL })
     }
   })
 
@@ -239,12 +255,56 @@ describe("toAnswers", () => {
       name: "",
       email: "sam@example.com",
       company: "",
+      time: NO_CALL,
     })
     expect(toAnswers({ details: ["Sales"] }).details).toEqual({})
+  })
+
+  it("keeps a time up to 40 characters and maps anything else to no call", () => {
+    const iso = "2026-11-23T14:00:00.000Z"
+    expect(toAnswers({ time: iso }).time).toBe(iso)
+    expect(toAnswers({ time: "" }).time).toBe("")
+    expect(toAnswers({ time: "a".repeat(40) }).time).toBe("a".repeat(40))
+    for (const time of ["a".repeat(41), 7, null, ["x"], undefined]) {
+      expect(toAnswers({ time }).time).toBe(NO_CALL)
+    }
+    expect(toAnswers({}).time).toBe(NO_CALL)
+  })
+})
+
+describe("formatCallTime", () => {
+  it("names the weekday, date, time and zone", () => {
+    expect(formatCallTime("2026-11-23T14:00:00.000Z", "America/New_York")).toBe(
+      "Monday, November 23 at 9:00 AM EST",
+    )
+    expect(
+      formatCallTime("2026-11-23T14:00:00.000Z", "America/Los_Angeles"),
+    ).toBe("Monday, November 23 at 6:00 AM PST")
   })
 })
 
 describe("buildEmail", () => {
+  it("has a line for the call step", () => {
+    expect(buildEmail(hiring()).text).toContain(
+      "Want to talk it through?\nNo call, just email me",
+    )
+    const { text } = buildEmail(
+      hiring({ time: "2026-11-23T14:00:00.000Z" }),
+      { timeZone: "America/New_York", minutes: 20 },
+      {
+        confirm: "https://katefrench.me/booking/a",
+        decline: "https://katefrench.me/booking/b",
+      },
+    )
+    expect(text).toContain(
+      "Want to talk it through?\nMonday, November 23 at 9:00 AM EST, 20 minutes",
+    )
+    expect(text).toContain(
+      "Confirm: https://katefrench.me/booking/a\nDecline: https://katefrench.me/booking/b",
+    )
+    expect(buildEmail(hiring()).text).not.toContain("Confirm:")
+  })
+
   it("puts each intent's identifying answers in the subject", () => {
     expect(buildEmail(hiring()).subject).toBe(
       "[katefrench.me] Hiring · Sales · New York",

@@ -1,12 +1,18 @@
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
+  type Answers,
+  type Availability,
   FIELD_LABELS,
   type Field,
   INTENTS,
   LIMITS,
+  NO_CALL,
+  NO_CALL_LABEL,
   PRIVACY_NOTE,
   STEP_HEADINGS,
+  formatCallTime,
   groupsFor,
+  hasCallTime,
   intentOption,
   isIntent,
   stepLabel,
@@ -21,6 +27,7 @@ const FIELD_ORDER: Field[] = [
   "intent",
   "details",
   "message",
+  "time",
   "name",
   "email",
   "company",
@@ -206,6 +213,107 @@ function Failure({
   )
 }
 
+const visitorZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+
+function dayKey(iso: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso))
+}
+
+function CallStep({
+  answers,
+  availability,
+  error,
+  onPick,
+}: {
+  answers: Answers
+  availability: Availability | "loading"
+  error?: string
+  onPick: (time: string) => void
+}) {
+  const zone = visitorZone()
+  const [day, setDay] = useState(() =>
+    hasCallTime(answers) ? dayKey(answers.time, zone) : "",
+  )
+  const loading = availability === "loading"
+  const { times, minutes } = loading ? { times: [], minutes: 0 } : availability
+
+  const dayLabel = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  })
+  const timeLabel = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    hour: "numeric",
+    minute: "2-digit",
+  })
+  const days = new Map<string, string>()
+  for (const time of times) {
+    const key = dayKey(time, zone)
+    if (!days.has(key)) days.set(key, dayLabel.format(new Date(time)))
+  }
+  const onDay = times.filter((time) => dayKey(time, zone) === day)
+  const noCall = [{ value: NO_CALL, label: NO_CALL_LABEL }]
+
+  return (
+    <>
+      {loading && <p aria-live="polite">Loading open times…</p>}
+      {!loading && times.length === 0 && (
+        <p>There are no open times right now, so I&rsquo;ll reply by email.</p>
+      )}
+      {times.length > 0 && (
+        <>
+          <p className="text-[0.9375rem]">
+            Calls are {minutes} minutes, by video. Times are in your time zone,{" "}
+            {zone}.
+          </p>
+          <Choices
+            name="call-day"
+            legend="Pick a day"
+            options={[...days].map(([value, label]) => ({ value, label }))}
+            value={day || undefined}
+            onPick={setDay}
+            error={error}
+            errorField="time"
+            row
+          />
+          {onDay.length > 0 && (
+            <Choices
+              name="time"
+              legend={`Times on ${days.get(day)}`}
+              options={onDay.map((time) => ({
+                value: time,
+                label: timeLabel.format(new Date(time)),
+              }))}
+              value={answers.time}
+              onPick={onPick}
+              error={error}
+              errorField="time"
+              row
+            />
+          )}
+        </>
+      )}
+      <Choices
+        name="time"
+        legend={times.length > 0 ? "Or skip the call" : "Reply by email"}
+        options={noCall}
+        value={answers.time}
+        onPick={onPick}
+        error={error}
+        errorField="time"
+      />
+      <FieldError field="time" message={error} />
+    </>
+  )
+}
+
 const panelClass =
   "flex min-w-0 flex-col gap-5 rounded-3xl border border-primary/20 bg-secondary p-[clamp(1.1rem,3vw,1.75rem)]"
 
@@ -220,6 +328,7 @@ export default function ContactForm({
 }) {
   const {
     answers,
+    availability,
     steps,
     step,
     stepIndex,
@@ -232,6 +341,7 @@ export default function ContactForm({
     next,
     pickDetail,
     pickIntent,
+    pickTime,
     sending,
     setToken,
     token,
@@ -253,7 +363,11 @@ export default function ContactForm({
   useEffect(() => {
     if (errorFocus === 0) return
     const field = FIELD_ORDER.find((f) => errors[f])
-    if (field === "intent" || field === "details") {
+    if (field === "time") {
+      document
+        .querySelector<HTMLInputElement>("#contact-form fieldset input")
+        ?.focus()
+    } else if (field === "intent" || field === "details") {
       const unanswered = Array.from(
         document.querySelectorAll<HTMLFieldSetElement>(
           "#contact-form fieldset",
@@ -274,7 +388,15 @@ export default function ContactForm({
         <h2 ref={heading} tabIndex={-1} className={headingClass}>
           Thanks, {firstName}.
         </h2>
-        <p>I&rsquo;ll reply by email soon.</p>
+        {hasCallTime(answers) ? (
+          <p>
+            You asked for a call on{" "}
+            {formatCallTime(answers.time, visitorZone())}. That&rsquo;s a
+            request for now, and I&rsquo;ll confirm it by email.
+          </p>
+        ) : (
+          <p>I&rsquo;ll reply by email soon.</p>
+        )}
         <a
           href="/"
           className={cn(buttonVariants({ variant: "outline" }), "self-start")}
@@ -350,6 +472,15 @@ export default function ContactForm({
         />
       )}
 
+      {step === "call" && (
+        <CallStep
+          answers={answers}
+          availability={availability}
+          error={errors.time}
+          onPick={pickTime}
+        />
+      )}
+
       {step === "reply" && (
         <>
           <TextField
@@ -414,7 +545,13 @@ export default function ContactForm({
           </Button>
         )}
         <Button type="submit" disabled={last && (sending || !token)}>
-          {last ? (sending ? "Sending…" : "Send") : "Continue"}
+          {last
+            ? sending
+              ? "Sending…"
+              : hasCallTime(answers)
+                ? "Send request"
+                : "Send"
+            : "Continue"}
         </Button>
       </div>
     </form>

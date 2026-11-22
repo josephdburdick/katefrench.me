@@ -5,7 +5,13 @@ export const SOURCES = ["numbers", "new-york", "message", "venues"] as const
 export type Source = (typeof SOURCES)[number]
 
 /** The order a visitor sees the steps in. Steps a visitor doesn't need are left out by `stepsFor`. */
-export const STEP_ORDER = ["intent", "details", "message", "reply"] as const
+export const STEP_ORDER = [
+  "intent",
+  "details",
+  "message",
+  "call",
+  "reply",
+] as const
 export type StepId = (typeof STEP_ORDER)[number]
 
 export type Answers = {
@@ -15,10 +21,15 @@ export type Answers = {
   name: string
   email: string
   company: string
+  /** `""` until answered, `NO_CALL`, or an ISO UTC start time. */
+  time: string
 }
 
+export const NO_CALL = "none"
+export const NO_CALL_LABEL = "No call, just email me"
+
 export type Field =
-  "intent" | "details" | "message" | "name" | "email" | "company"
+  "intent" | "details" | "message" | "time" | "name" | "email" | "company"
 export type Errors = Partial<Record<Field, string>>
 
 export type DetailGroup = {
@@ -112,6 +123,7 @@ export const STEP_HEADINGS: Record<StepId, string> = {
   intent: "What brings you here?",
   details: "A few quick details",
   message: "Tell me about it",
+  call: "Want to talk it through?",
   reply: "Where should I reply?",
 }
 
@@ -128,6 +140,7 @@ export const FIELD_STEP: Record<Field, StepId> = {
   intent: "intent",
   details: "details",
   message: "message",
+  time: "call",
   name: "reply",
   email: "reply",
   company: "reply",
@@ -158,6 +171,26 @@ export type ContactResponse =
       fields?: Errors
     }
 
+export type Availability = { times: string[]; minutes: number }
+
+/** `emailed` is false when the email to the visitor didn't go out. */
+export type BookingResponse =
+  | {
+      state: "open"
+      action: "confirm" | "decline"
+      start: string
+      minutes: number
+      name: string
+      timeZone: string
+    }
+  | { state: "used" }
+  | { state: "taken" }
+  | { state: "declined"; emailed: boolean }
+  | { state: "confirmed"; start: string; videoLink: string; emailed: boolean }
+
+export const TIME_TAKEN =
+  "That time was just taken. Pick another, or choose email only."
+
 export const SENDER = { email: "form@katefrench.me", name: "katefrench.me" }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -170,6 +203,7 @@ export function emptyAnswers(): Answers {
     name: "",
     email: "",
     company: "",
+    time: "",
   }
 }
 
@@ -253,6 +287,10 @@ export function validateStep(step: StepId, answers: Answers): Errors {
     }
   }
 
+  if (step === "call" && answers.time === "") {
+    errors.time = "Pick a time, or choose email only."
+  }
+
   if (step === "reply") {
     if (!answers.name.trim()) errors.name = "Add your name."
     else if (answers.name.length > LIMITS.name) {
@@ -313,13 +351,44 @@ export function toAnswers(raw: unknown): Answers {
     name: str(input.name),
     email: str(input.email),
     company: str(input.company),
+    time:
+      typeof input.time === "string" && input.time.length <= 40
+        ? input.time
+        : NO_CALL,
   }
 }
 
+export function hasCallTime(answers: Answers): boolean {
+  return answers.time !== "" && answers.time !== NO_CALL
+}
+
+/** Like "Monday, November 23 at 9:00 AM EST". */
+export function formatCallTime(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  })
+    .format(new Date(iso))
+    .replace(/\s/g, " ")
+}
+
+export type CallDetails = { timeZone: string; minutes: number }
+
 const oneLine = (value: string) => value.replace(/[\r\n]+/g, " ").trim()
 
-/** Every question with its answer, in the order the visitor saw them. The email and the lead screen both use it. */
-export function answerPairs(answers: Answers): [string, string][] {
+/**
+ * Every question with its answer, in the order the visitor saw them. The email and the lead screen
+ * both use it. The "Want to talk it through?" pair comes after the message only when `callLine` is given.
+ */
+export function answerPairs(
+  answers: Omit<Answers, "time">,
+  callLine?: string,
+): [string, string][] {
   const option = answers.intent ? intentOption(answers.intent) : undefined
   return [
     [STEP_HEADINGS.intent, option?.label ?? ""],
@@ -328,13 +397,20 @@ export function answerPairs(answers: Answers): [string, string][] {
       answers.details[group.key] ?? "",
     ]),
     [option?.prompt ?? STEP_HEADINGS.message, answers.message.trim()],
+    ...(callLine === undefined
+      ? []
+      : [[STEP_HEADINGS.call, callLine] as [string, string]]),
     [FIELD_LABELS.name, oneLine(answers.name)],
     [FIELD_LABELS.email, answers.email.trim()],
     [FIELD_LABELS.company, oneLine(answers.company) || "Not given"],
   ]
 }
 
-export function buildEmail(answers: Answers): {
+export function buildEmail(
+  answers: Answers,
+  call?: CallDetails,
+  links?: { confirm: string; decline: string },
+): {
   subject: string
   text: string
   replyTo: { email: string; name: string }
@@ -349,9 +425,17 @@ export function buildEmail(answers: Answers): {
     .filter(Boolean)
     .join(" · ")
 
-  const text = answerPairs(answers)
-    .map(([question, answer]) => `${question}\n${answer}`)
-    .join("\n\n")
+  const callLine = !hasCallTime(answers)
+    ? NO_CALL_LABEL
+    : call
+      ? `${formatCallTime(answers.time, call.timeZone)}, ${call.minutes} minutes`
+      : answers.time
+  const text = [
+    ...answerPairs(answers, callLine).map(
+      ([question, answer]) => `${question}\n${answer}`,
+    ),
+    ...(links ? [`Confirm: ${links.confirm}\nDecline: ${links.decline}`] : []),
+  ].join("\n\n")
 
   return { subject, text, replyTo: { email: answers.email.trim(), name } }
 }

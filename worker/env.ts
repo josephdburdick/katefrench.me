@@ -4,6 +4,6 @@ export interface Env {
   EMAIL: SendEmail
   CONTACT_TO: string
   TURNSTILE_SECRET: string
-  /** "1" swaps email and Turnstile for local stand-ins that never call out. */
+  /** "1" swaps email, Turnstile and the calendar for local stand-ins that never call out. */
   LOCAL_SERVICES?: string
 }
