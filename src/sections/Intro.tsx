@@ -1,12 +1,13 @@
 import Icon from "@/components/global/Icon"
 import { useApi } from "@/components/providers/ContentProvider"
 import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 function Intro() {
   const { data } = useApi()
   const { attributes: intro, html } = data.intro
 
-  const { linkedin, resume } = data.contact.attributes.links
+  const { linkedin, resume, contact } = data.contact.attributes.links
   return (
     <div className="container">
       <div className="grid grid-cols-12 md:min-h-[50dvh] lg:gap-12">
@@ -47,6 +48,15 @@ function Intro() {
                   href={linkedin.url}
                 >
                   Connect with me on LinkedIn
+                </a>
+                <a
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "border-primary",
+                  )}
+                  href={contact.url}
+                >
+                  {contact.text}
                 </a>
                 <a
                   className={buttonVariants({ variant: "link", size: "lg" })}

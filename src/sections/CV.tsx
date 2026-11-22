@@ -2,6 +2,7 @@ import BodyText from "@/components/global/BodyText"
 import DateSpan from "@/components/global/DateSpan"
 import { useApi } from "@/components/providers/ContentProvider"
 import { buttonVariants } from "@/components/ui/button"
+import type { ContactLink } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import React from "react"
 
@@ -24,13 +25,14 @@ export default function CV() {
   const { data } = useApi()
   const intro = data.intro.attributes
   const cv = data.cv.attributes
-  const { linkedin } = data.contact.attributes.links
+  const { linkedin, contact } = data.contact.attributes.links
   const { sections } = cv
   return (
     <div className="relative mx-auto mt-10 w-full max-w-xl p-3 md:p-6">
       <Hero
         {...intro.picture}
         link={linkedin}
+        contact={contact}
         className="h-auto w-24 rounded-b-full object-cover object-center md:w-32"
       />
       <div className="mt-6 [&>section+section]:mt-3 md:[&>section+section]:mt-6 [&>section]:p-3 md:[&>section]:p-6">
@@ -55,13 +57,11 @@ export default function CV() {
 
 function Hero(
   props: React.ImgHTMLAttributes<HTMLImageElement> & {
-    link?: {
-      url: string
-      text: string
-    }
+    link?: ContactLink
+    contact?: ContactLink
   },
 ) {
-  const { alt, src, link, ...rest } = props
+  const { alt, src, link, contact, ...rest } = props
   return (
     <div className="relative -mt-12 flex items-center justify-center gap-4">
       <div className="w-auto">
@@ -85,6 +85,17 @@ function Hero(
           )}
         >
           {link.url.replace("https://", "")}
+        </a>
+      )}
+      {contact && (
+        <a
+          href={contact.url}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "rounded-full border-primary",
+          )}
+        >
+          {contact.text}
         </a>
       )}
     </div>
