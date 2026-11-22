@@ -1,3 +1,4 @@
+import NextStep from "@/components/global/NextStep"
 import SubHeading from "@/components/global/SubHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 import { cn } from "@/lib/utils"
@@ -85,6 +86,7 @@ export default function Message() {
           ))}
         </ol>
       </div>
+      <NextStep source="message" />
     </>
   )
 }

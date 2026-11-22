@@ -32,4 +32,7 @@ notes:
     text: They will ask anyway. Answering first is why they write back.
   - lead: One small ask.
     text: A day and a time is easier to say yes to than "let me know."
+cta:
+  text: "Run a venue or put on events? Let's talk."
+  draft: true
 ---

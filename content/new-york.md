@@ -13,6 +13,9 @@ city:
       number: demos
       phrase: demos go on to onboarding.
   key: Each block is one in a hundred. The amber ones said yes.
+cta:
+  text: "Building a team in New York? Tell me about the role."
+  draft: true
 ---
 
 AdmitONE is a ticketing and events platform. When I started, almost no one in New York had heard of it. There was no local team and no list of contacts. I am the New York team.
