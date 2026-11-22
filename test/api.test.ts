@@ -46,6 +46,17 @@ describe("GET /api/content", () => {
     }
   })
 
+  it("gives each call to action draft wording", async () => {
+    await seed()
+    const data = await (await req("/api/content")).json<Content>()
+    for (const key of ["numbers", "new-york", "message", "venues"]) {
+      const { cta } = data[key].attributes
+      expect(cta.text.trim(), key).not.toBe("")
+      expect(cta.draft, key).toBe(true)
+    }
+    expect(draftKeys).toEqual(["closing", "first-call", "marketing", "message"])
+  })
+
   it("serves Kate's four numbers", async () => {
     await seed()
     const data = await (await req("/api/content")).json<Content>()

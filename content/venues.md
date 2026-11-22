@@ -31,4 +31,7 @@ roles:
       width: 664
       height: 443
     caption: Licensing work for New York bars and restaurants.
+cta:
+  text: "Own a venue or plan events? Tell me what you put on."
+  draft: true
 ---

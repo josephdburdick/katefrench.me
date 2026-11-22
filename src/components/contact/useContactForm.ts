@@ -3,6 +3,7 @@ import {
   type Errors,
   type Field,
   type Intent,
+  type Source,
   emptyAnswers,
   firstStepWithError,
   stepsFor,
@@ -17,9 +18,13 @@ export type Failure = "turnstile" | "send" | null
 
 type TextField = "message" | "name" | "email" | "company"
 
-export default function useContactForm() {
-  const [answers, setAnswers] = useState<Answers>(emptyAnswers)
-  const [stepIndex, setStepIndex] = useState(0)
+export type Prefill = { intent: Intent | null; from: Source | null }
+
+export default function useContactForm({ intent, from }: Prefill) {
+  const [answers, setAnswers] = useState<Answers>(() =>
+    intent ? withIntent(emptyAnswers(), intent) : emptyAnswers(),
+  )
+  const [stepIndex, setStepIndex] = useState(intent ? 1 : 0)
   const [errors, setErrors] = useState<Errors>({})
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
@@ -77,6 +82,7 @@ export default function useContactForm() {
       answers,
       token,
       website: trap.current?.value ?? "",
+      from,
     })
     inFlight.current = false
     setSending(false)

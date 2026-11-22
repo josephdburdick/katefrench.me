@@ -17,4 +17,7 @@ items:
     kind: multiple
     value: 2
     label: Cue Quest sign-ups, which I helped double
+cta:
+  text: "Hiring for a role like this? Tell me about it."
+  draft: true
 ---

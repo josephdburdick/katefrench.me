@@ -1,4 +1,5 @@
 import Chip from "@/components/global/Chip"
+import NextStep from "@/components/global/NextStep"
 import { useApi } from "@/components/providers/ContentProvider"
 import { type NumberItem, formatNumber } from "@/lib/numbers"
 
@@ -18,6 +19,7 @@ export default function Numbers() {
           </li>
         ))}
       </ul>
+      <NextStep source="numbers" />
     </section>
   )
 }

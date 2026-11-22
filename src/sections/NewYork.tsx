@@ -1,3 +1,4 @@
+import NextStep from "@/components/global/NextStep"
 import SubHeading from "@/components/global/SubHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 
@@ -25,6 +26,7 @@ export default function NewYork() {
           items={data.numbers.attributes.items}
         />
       </div>
+      <NextStep source="new-york" />
       <Message />
     </section>
   )
