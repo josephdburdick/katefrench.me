@@ -9,7 +9,7 @@ import { type SeedBindings, seedContent } from "./seed-write.ts"
 /** `pnpm seed:local`: replaces the local D1 content that `pnpm dev` uses with `content/*.md`. */
 
 try {
-  assertLocalOnly(process.argv.slice(2))
+  assertLocalOnly("seed:local", process.argv.slice(2))
 } catch (err) {
   console.error((err as Error).message)
   process.exit(1)

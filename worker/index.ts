@@ -2,6 +2,7 @@ import { Hono } from "hono"
 
 import { contactApp } from "./contact"
 import { content } from "./content"
+import { edit, editHeaders } from "./edit"
 import { cloudflareEmail, localEmail } from "./email"
 import type { Env } from "./env"
 import { localTurnstile, siteverify } from "./turnstile"
@@ -22,6 +23,10 @@ app.route(
         },
   ),
 )
+
+app.use("/api/edit", editHeaders)
+app.use("/api/edit/", editHeaders)
+app.route("/api/edit/:token", edit)
 
 app.all("/api/*", (c) => c.json({ error: "not found" }, 404))
 

@@ -70,11 +70,25 @@ describe("seed", () => {
 
 describe("assertLocalOnly", () => {
   it("rejects --remote and any other argument", () => {
-    expect(() => assertLocalOnly(["--remote"])).toThrow(/local only/)
-    expect(() => assertLocalOnly(["x"])).toThrow(/local only/)
+    expect(() => assertLocalOnly("seed:local", ["--remote"])).toThrow(
+      /local only/,
+    )
+    expect(() => assertLocalOnly("seed:local", ["x"])).toThrow(/local only/)
   })
 
   it("accepts no arguments", () => {
-    expect(() => assertLocalOnly([])).not.toThrow()
+    expect(() => assertLocalOnly("seed:local", [])).not.toThrow()
+  })
+
+  it("names the command that ran", () => {
+    expect(() => assertLocalOnly("seed:local", ["--remote"])).toThrow(
+      /^seed:local /,
+    )
+    expect(() => assertLocalOnly("edit-link:local", ["--remote"])).toThrow(
+      /^edit-link:local is local only/,
+    )
+    expect(() => assertLocalOnly("edit-link:local", ["x"])).toThrow(
+      /^edit-link:local is local only/,
+    )
   })
 })
