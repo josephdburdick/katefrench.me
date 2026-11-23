@@ -5,7 +5,7 @@ export const EDIT_SECTIONS = [
   { key: "numbers", title: "Numbers" },
   { key: "new-york", title: "New York, from zero" },
   { key: "message", title: "The message that worked" },
-  { key: "first-call", title: "The first call" },
+  { key: "first-call", title: "How I keep clients coming back" },
   { key: "marketing", title: "More than the sales call" },
   { key: "venues", title: "Why venues pick up" },
   { key: "closing", title: "Closing" },

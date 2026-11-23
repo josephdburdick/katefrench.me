@@ -1,11 +1,5 @@
 ---
 draft: true
-heading: What an organizer hears on our first call
-lines:
-  - Every fee, in writing, before they sign anything.
-  - When they get paid after a show.
-  - Who picks up if something breaks on show night.
-  - My direct number.
 steps:
   heading: How I keep clients coming back
   items:

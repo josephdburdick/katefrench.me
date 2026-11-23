@@ -419,10 +419,10 @@ describe("PUT /sections/:key", () => {
     expect((await row("closing"))?.updated_at).not.toBe(OLD)
   })
 
-  it("saves nested text, like the message's pitch and the empty quote", async () => {
+  it("saves nested text, like the message's email and the empty quote", async () => {
     const data = await load()
     const message = sectionBody(data.message)
-    message.attributes.pitch[1].text = "and stay with you after."
+    message.attributes.email.paragraphs[1][0].text = "I work with AdmitONE."
     expect((await put(editPath("/sections/message"), message)).status).toBe(200)
     const firstCall = sectionBody(data["first-call"])
     firstCall.attributes.quote.text = "Kate picked up on show night."
@@ -430,9 +430,9 @@ describe("PUT /sections/:key", () => {
       (await put(editPath("/sections/first-call"), firstCall)).status,
     ).toBe(200)
     const saved = await publicContent()
-    expect(saved.message.attributes.pitch[1]).toEqual({
-      text: "and stay with you after.",
-      note: 2,
+    expect(saved.message.attributes.email.paragraphs[1][0]).toEqual({
+      text: "I work with AdmitONE.",
+      note: 3,
     })
     expect(saved["first-call"].attributes.quote.text).toBe(
       "Kate picked up on show night.",
@@ -490,8 +490,8 @@ describe("PUT /sections/:key", () => {
     [
       "a changed array length",
       "first-call",
-      (b) => b.attributes.lines.push("Another line"),
-      "attributes.lines",
+      (b) => b.attributes.steps.items.push({ title: "More", text: "More" }),
+      "attributes.steps.items",
     ],
     [
       "a removed list item",
@@ -502,8 +502,8 @@ describe("PUT /sections/:key", () => {
     [
       "a changed note number",
       "message",
-      (b) => (b.attributes.pitch[0].note = 9),
-      "attributes.pitch.0.note",
+      (b) => (b.attributes.email.paragraphs[0][0].note = 9),
+      "attributes.email.paragraphs.0.0.note",
     ],
     [
       "a changed photo width",

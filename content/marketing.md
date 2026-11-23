@@ -14,4 +14,8 @@ items:
     parts:
       - Guerrilla sticker campaign
       - App Store screens
+quote:
+  text: "I wanted to give a shoutout to Kate French in our New York office for everything she's been doing. Kate has been developing content for our website, standardizing workflows, as well as managing an increase of +2000% in lead submissions thanks to our NYC meta campaign! Thank you Kate!"
+  name: James Simpson
+  company: AdmitONE
 ---

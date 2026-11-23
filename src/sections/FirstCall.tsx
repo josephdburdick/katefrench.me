@@ -5,24 +5,11 @@ type Step = { title: string; text: string }
 
 export default function FirstCall() {
   const { data } = useApi()
-  const { heading, lines, steps, quote } = data["first-call"].attributes
+  const { steps, quote } = data["first-call"].attributes
   return (
     <section className="flex flex-col gap-12">
-      <div className="flex min-w-0 flex-col gap-4 md:max-w-[50%]">
-        <SubHeading>{heading}</SubHeading>
-        <ul>
-          {lines.map((line: string, i: number) => (
-            <li
-              key={i}
-              className="border-border font-display border-t py-4 text-[clamp(1.25rem,1.6vw+0.7rem,1.75rem)] leading-tight tracking-[-0.01em] last:border-b"
-            >
-              {line}
-            </li>
-          ))}
-        </ul>
-      </div>
       <div className="flex min-w-0 flex-col gap-6">
-        <SubHeading as="h3">{steps.heading}</SubHeading>
+        <SubHeading>{steps.heading}</SubHeading>
         <ol className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
           {steps.items.map((step: Step, i: number) => (
             <li
