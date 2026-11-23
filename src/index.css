@@ -177,8 +177,17 @@
     --radius: 0.5rem;
   }
 
-  * {
+  *,
+  ::before,
+  ::after {
     border-color: var(--color-border);
+    corner-shape: squircle;
+  }
+
+  /* Circles, pills and the arched photos keep true arcs; a squircle would flatten them. */
+  .rounded-full,
+  .rounded-b-full {
+    corner-shape: round;
   }
 
   body {
