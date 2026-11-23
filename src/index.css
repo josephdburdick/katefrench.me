@@ -196,3 +196,12 @@
     transform: scaleX(1);
   }
 }
+
+@keyframes closing-rise {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
