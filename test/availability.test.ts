@@ -183,7 +183,7 @@ describe("GET /api/availability", () => {
     log.mockRestore()
   })
 
-  it("returns no times with the production services, which have no calendar yet", async () => {
+  it("returns no times with the production services and no Google secrets", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     const production = {
       ...(workerEnv as unknown as Env),
@@ -194,6 +194,27 @@ describe("GET /api/availability", () => {
     expect(res.status).toBe(200)
     const body = await res.json<{ times: string[] }>()
     expect(body.times).toEqual([])
+    log.mockRestore()
+  })
+
+  it("returns no times when the Google calendar can't reach Google", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    const production = {
+      ...(workerEnv as unknown as Env),
+      LOCAL_SERVICES: undefined,
+      GOOGLE_CLIENT_ID: "client-id",
+      GOOGLE_CLIENT_SECRET: "client-secret",
+      GOOGLE_REFRESH_TOKEN: "refresh-token",
+    }
+    expect(servicesFor(production).calendar).not.toBeNull()
+    vi.mocked(fetch).mockClear()
+    const res = await get(servicesFor, production)
+    expect(res.status).toBe(200)
+    const body = await res.json<{ times: string[] }>()
+    expect(body.times).toEqual([])
+    expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(
+      "https://oauth2.googleapis.com/token",
+    )
     log.mockRestore()
   })
 })
