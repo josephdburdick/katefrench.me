@@ -24,7 +24,7 @@ describe("GET /api/content", () => {
     expect(res.headers.get("content-type")).toMatch(/^application\/json/)
     const data = await res.json<Content>()
     expect(Object.keys(data).sort()).toEqual(keys)
-    expect(keys).toHaveLength(13)
+    expect(keys).toHaveLength(14)
     for (const entry of Object.values(data)) {
       expect(Object.keys(entry).sort()).toEqual([
         "attributes",
@@ -59,6 +59,7 @@ describe("GET /api/content", () => {
       "first-call",
       "marketing",
       "message",
+      "privacy",
       "venues",
     ])
   })

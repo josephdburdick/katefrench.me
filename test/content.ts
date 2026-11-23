@@ -11,6 +11,7 @@ import marketing from "../content/marketing.md?raw"
 import message from "../content/message.md?raw"
 import newYork from "../content/new-york.md?raw"
 import numbers from "../content/numbers.md?raw"
+import privacy from "../content/privacy.md?raw"
 import site from "../content/site.md?raw"
 import venues from "../content/venues.md?raw"
 import { contentRows } from "../scripts/seed-data.ts"
@@ -28,6 +29,7 @@ export const files = {
   message,
   "new-york": newYork,
   numbers,
+  privacy,
   site,
   venues,
 }
@@ -39,6 +41,7 @@ export const draftKeys = [
   "first-call",
   "marketing",
   "message",
+  "privacy",
   "venues",
 ]
 

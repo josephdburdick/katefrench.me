@@ -361,6 +361,72 @@ describe("googleCalendar createEvent", () => {
   })
 })
 
+describe("googleCalendar extra busy calendars", () => {
+  const work = "kate@work.example"
+  const both = { ...credentials, busyCalendars: [work] }
+
+  it("asks for every calendar and merges their busy times in order", async () => {
+    const { fetchImpl, calls } = fakeGoogle({
+      freeBusy: () =>
+        Response.json({
+          calendars: {
+            primary: {
+              busy: [
+                {
+                  start: "2026-11-23T18:00:00.000Z",
+                  end: "2026-11-23T19:00:00.000Z",
+                },
+              ],
+            },
+            [work]: {
+              busy: [
+                {
+                  start: "2026-11-23T15:00:00.000Z",
+                  end: "2026-11-23T16:00:00.000Z",
+                },
+              ],
+            },
+          },
+        }),
+    })
+    const busy = await googleCalendar(both, fetchImpl).busy(from, to)
+
+    expect(json(calls[1]!.init).items).toEqual([
+      { id: "primary" },
+      { id: work },
+    ])
+    expect(busy).toEqual([
+      { start: "2026-11-23T15:00:00.000Z", end: "2026-11-23T16:00:00.000Z" },
+      { start: "2026-11-23T18:00:00.000Z", end: "2026-11-23T19:00:00.000Z" },
+    ])
+  })
+
+  it("fails when a listed calendar can't be read, without naming it", async () => {
+    for (const calendars of [
+      { primary: { busy: [] } },
+      {
+        primary: { busy: [] },
+        [work]: { errors: [{ reason: "notFound" }], busy: [] },
+      },
+    ]) {
+      const { fetchImpl } = fakeGoogle({
+        freeBusy: () => Response.json({ calendars }),
+      })
+      const error = await failure(() =>
+        googleCalendar(both, fetchImpl).busy(from, to),
+      )
+      expect(error.code).toBe("google-freebusy")
+      expectClean(error, work)
+    }
+  })
+
+  it("still creates events only on the primary calendar", async () => {
+    const { fetchImpl, calls } = fakeGoogle({})
+    await googleCalendar(both, fetchImpl).createEvent(event)
+    expect(calls.at(-1)!.url).toContain("/calendars/primary/events")
+  })
+})
+
 describe("GOOGLE_SCOPES", () => {
   it("holds only the FreeBusy and events scopes", () => {
     expect([...GOOGLE_SCOPES]).toEqual([
@@ -401,6 +467,15 @@ describe("servicesFor calendar choice", () => {
       servicesFor(production({ GOOGLE_REFRESH_TOKEN: "another-token" }))
         .calendar,
     ).not.toBe(first)
+  })
+
+  it("builds a new calendar when the extra busy calendars change", () => {
+    const first = servicesFor(production()).calendar
+    const extra = servicesFor(
+      production({ GOOGLE_BUSY_CALENDARS: " kate@work.example , " }),
+    ).calendar
+    expect(extra).not.toBeNull()
+    expect(extra).not.toBe(first)
   })
 
   it("has no calendar when any Google secret is missing or blank", () => {

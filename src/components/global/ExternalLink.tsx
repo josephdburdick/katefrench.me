@@ -4,9 +4,9 @@ import type { PropsWithChildren } from "react"
 import Icon from "./Icon"
 
 export type ExternalLinkType = PropsWithChildren & {
-  href: string;
-  className?: string;
-};
+  href: string
+  className?: string
+}
 
 export default function ExternalLink(props: ExternalLinkType) {
   const { href, children, className = "" } = props

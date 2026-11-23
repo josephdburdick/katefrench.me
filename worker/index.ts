@@ -8,9 +8,12 @@ import { edit, editHeaders } from "./edit"
 import { editLeads } from "./edit-leads"
 import { editResume } from "./edit-resume"
 import type { Env } from "./env"
+import { rateLimit } from "./rate-limit"
 import { servicesFor } from "./services"
 
 const app = new Hono<{ Bindings: Env }>()
+
+app.use("/api/*", rateLimit)
 
 app.route("/api/content", content)
 app.route("/api/contact", contactApp(servicesFor))

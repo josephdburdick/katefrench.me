@@ -2,7 +2,13 @@ import { exports, env as workerEnv } from "cloudflare:workers"
 import { Hono } from "hono"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { LIMITS, NO_CALL, SENDER, TIME_TAKEN } from "../src/lib/contact-form"
+import {
+  HOURLY_LEAD_CAP,
+  LIMITS,
+  NO_CALL,
+  SENDER,
+  TIME_TAKEN,
+} from "../src/lib/contact-form"
 import { hashToken } from "../worker/booking"
 import { type Calendar, localCalendar } from "../worker/calendar"
 import { type ContactServices, contactApp } from "../worker/contact"
@@ -250,6 +256,26 @@ describe("POST /api/contact", () => {
       name: "Sam Lee",
     })
     expect(message.subject).toBe("[katefrench.me] Hiring · Sales · New York")
+  })
+
+  it("answers busy once an hour's messages reach the cap, and sends nothing more", async () => {
+    const email = localEmail()
+    const { post } = setup(email)
+    const insert = (id: number, at: Date) =>
+      workerEnv.DB.prepare(
+        "INSERT INTO leads (id, created_at, intent, answers, name, email) VALUES (?, ?, 'hiring', '{}', 'x', 'x@example.com')",
+      )
+        .bind(`cap-${id}`, at.toISOString())
+        .run()
+    await insert(0, new Date(NOW.getTime() - 3_600_001))
+    for (let id = 1; id < HOURLY_LEAD_CAP; id += 1) await insert(id, NOW)
+
+    expect((await post(valid)).status).toBe(200)
+    const res = await post(valid)
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({ ok: false, error: "busy" })
+    expect(email.sent).toHaveLength(1)
+    expect(await leads()).toHaveLength(HOURLY_LEAD_CAP + 1)
   })
 
   it("never takes the recipient from the body", async () => {

@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 import { loadAvailability, submitContact } from "./submit"
 
-export type Failure = "turnstile" | "send" | null
+export type Failure = "turnstile" | "send" | "busy" | null
 
 type TextField = "message" | "name" | "email" | "company"
 
@@ -142,7 +142,11 @@ export default function useContactForm({ intent, from }: Prefill) {
       if (first > -1) setStepIndex(first)
       return
     }
-    setFailure(result.error === "turnstile" ? "turnstile" : "send")
+    setFailure(
+      result.error === "turnstile" || result.error === "busy"
+        ? result.error
+        : "send",
+    )
   }
 
   async function next() {

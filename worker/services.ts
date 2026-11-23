@@ -18,11 +18,25 @@ function googleFor(env: Env): Calendar | null {
   const clientSecret = env.GOOGLE_CLIENT_SECRET?.trim()
   const refreshToken = env.GOOGLE_REFRESH_TOKEN?.trim()
   if (!clientId || !clientSecret || !refreshToken) return null
-  const key = JSON.stringify([clientId, clientSecret, refreshToken])
+  const busyCalendars = (env.GOOGLE_BUSY_CALENDARS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean)
+  const key = JSON.stringify([
+    clientId,
+    clientSecret,
+    refreshToken,
+    busyCalendars,
+  ])
   if (google?.key !== key) {
     google = {
       key,
-      calendar: googleCalendar({ clientId, clientSecret, refreshToken }),
+      calendar: googleCalendar({
+        clientId,
+        clientSecret,
+        refreshToken,
+        busyCalendars,
+      }),
     }
   }
   return google.calendar

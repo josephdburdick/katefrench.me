@@ -167,9 +167,12 @@ export type ContactResponse =
   | { ok: true }
   | {
       ok: false
-      error: "origin" | "too_large" | "invalid" | "turnstile" | "send"
+      error: "origin" | "too_large" | "invalid" | "turnstile" | "send" | "busy"
       fields?: Errors
     }
+
+/** Messages the site accepts in any one hour, from everyone together, before it answers `busy`. */
+export const HOURLY_LEAD_CAP = 30
 
 export type Availability = { times: string[]; minutes: number }
 
@@ -186,7 +189,29 @@ export type BookingResponse =
   | { state: "used" }
   | { state: "taken" }
   | { state: "declined"; emailed: boolean }
+  | { state: "suggested"; start: string; emailed: boolean }
   | { state: "confirmed"; start: string; videoLink: string; emailed: boolean }
+
+/** Characters of the note Kate may add when she declines or suggests another time. */
+export const BOOKING_NOTE_MAX = 500
+
+/** What Kate's booking link may send: a note, and `suggest` with an open start time to offer in place of the one asked for. */
+export type BookingAction = { note?: string; suggest?: string }
+
+/** Answers from `/api/booking/time/:token`, the visitor's link to a time Kate suggested. `emailed` is false when the follow-up email didn't go out. */
+export type SuggestionResponse =
+  | {
+      state: "open"
+      start: string
+      minutes: number
+      name: string
+      note: string
+      timeZone: string
+    }
+  | { state: "used" }
+  | { state: "taken" }
+  | { state: "confirmed"; start: string; videoLink: string; emailed: boolean }
+  | { state: "requested"; start: string; emailed: boolean }
 
 export const TIME_TAKEN =
   "That time was just taken. Pick another, or choose email only."

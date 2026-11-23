@@ -184,7 +184,7 @@ function Failure({
   failure,
   email,
 }: {
-  failure: "turnstile" | "send"
+  failure: "turnstile" | "send" | "busy"
   email?: string
 }) {
   return (
@@ -196,6 +196,11 @@ function Failure({
         <p className="font-semibold">
           The spam check didn&rsquo;t finish. Wait a moment, then press Send
           again.
+        </p>
+      ) : failure === "busy" ? (
+        <p className="font-semibold">
+          Too many messages came in at once, so this one didn&rsquo;t send. Wait
+          a minute, then press Send again.
         </p>
       ) : email ? (
         <>
@@ -554,6 +559,13 @@ export default function ContactForm({
             : "Continue"}
         </Button>
       </div>
+      {last && (
+        <p className="text-sm">
+          <a className="underline" href="/privacy">
+            How this site handles your details
+          </a>
+        </p>
+      )}
     </form>
   )
 }

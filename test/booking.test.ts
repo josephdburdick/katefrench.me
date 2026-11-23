@@ -81,7 +81,17 @@ async function setup(
     token: string,
     method = "GET",
     headers: Record<string, string> = { Origin: ORIGIN },
-  ) => app.request(`${ORIGIN}/api/booking/${token}`, { method, headers }, env)
+    body?: unknown,
+  ) =>
+    app.request(
+      `${ORIGIN}/api/booking/${token}`,
+      {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      },
+      env,
+    )
 
   return {
     calendar,
@@ -89,7 +99,8 @@ async function setup(
     confirm: token("Confirm"),
     decline: token("Decline"),
     call,
-    post: (token: string) => call(token, "POST"),
+    post: (token: string, body?: unknown) =>
+      call(token, "POST", { Origin: ORIGIN }, body),
     setNow: (date: Date) => {
       now = date
     },
@@ -360,5 +371,145 @@ describe("booking links", () => {
     expect(put.headers.get("Allow")).toBe("GET, POST")
     expect((await requestRow()).status).toBe("pending")
     expect(calendar.created).toEqual([])
+  })
+})
+
+describe("suggesting another time", () => {
+  beforeEach(async () => {
+    await workerEnv.DB.batch(
+      ["booking_suggestions", "booking_requests", "leads"].map((table) =>
+        workerEnv.DB.prepare(`DELETE FROM ${table}`),
+      ),
+    )
+    vi.spyOn(console, "log").mockImplementation(() => {})
+  })
+
+  const OTHER = "2026-11-25T15:00:00.000Z"
+  const THIRD = "2026-11-26T15:00:00.000Z"
+  const suggestionRow = async () =>
+    (await workerEnv.DB.prepare(
+      "SELECT status, note, start_at FROM booking_suggestions",
+    ).first<{ status: string; note: string; start_at: string }>())!
+  const visitorToken = (text: string) =>
+    text.match(new RegExp(`^${ORIGIN}/booking/(time/\\S+)$`, "m"))![1]
+
+  async function suggested(note = "Mornings are full that day.") {
+    const ctx = await setup()
+    const res = await ctx.post(ctx.confirm, { suggest: OTHER, note })
+    const sent = ctx.email.sent[0]
+    ctx.email.sent.length = 0
+    return { ...ctx, res, sent, token: visitorToken(sent.text) }
+  }
+
+  it("emails the visitor the new time and note, and books nothing", async () => {
+    const { res, sent, calendar, call, post, confirm, decline } =
+      await suggested()
+    expect(await res.json()).toEqual({
+      state: "suggested",
+      start: OTHER,
+      emailed: true,
+    })
+    expect(sent.to).toBe("sam@example.com")
+    expect(sent.text).toContain("Wednesday, November 25 at 10:00 AM EST")
+    expect(sent.text).toContain(
+      "A note from Kate:\nMornings are full that day.",
+    )
+    expect(calendar.created).toHaveLength(0)
+    expect((await requestRow()).status).toBe("declined")
+    expect(await suggestionRow()).toEqual({
+      status: "pending",
+      note: "Mornings are full that day.",
+      start_at: OTHER,
+    })
+    expect(await (await call(confirm)).json()).toEqual({ state: "used" })
+    expect(await (await post(decline)).json()).toEqual({ state: "used" })
+  })
+
+  it("refuses a time that isn't open and leaves the request pending", async () => {
+    const ctx = await setup()
+    const res = await ctx.post(ctx.decline, {
+      suggest: "2026-11-25T17:00:00.000Z",
+    })
+    expect(await res.json()).toEqual({ state: "taken" })
+    expect((await requestRow()).status).toBe("pending")
+    expect(ctx.email.sent).toHaveLength(0)
+  })
+
+  it("books the call when the visitor accepts", async () => {
+    const { token, call, post, calendar, email } = await suggested()
+    expect(await (await call(token)).json()).toMatchObject({
+      state: "open",
+      start: OTHER,
+      name: "Sam Lee",
+      note: "Mornings are full that day.",
+    })
+    const body = await (await post(token)).json<Record<string, unknown>>()
+    expect(body).toMatchObject({ state: "confirmed", start: OTHER })
+    expect(calendar.created).toHaveLength(1)
+    expect(calendar.created[0].start).toBe(OTHER)
+    expect(await leadStatus()).toBe("call-booked")
+    expect(email.sent.map((m) => m.to)).toEqual([
+      "kate@example.com",
+      "sam@example.com",
+    ])
+    expect(email.sent[1].text).toContain(String(body.videoLink))
+    expect((await suggestionRow()).status).toBe("accepted")
+    expect(await (await post(token)).json()).toEqual({ state: "used" })
+  })
+
+  it("keeps the suggestion open when the time has been taken", async () => {
+    const { token, post, calendar } = await suggested()
+    await calendar.createEvent({
+      start: OTHER,
+      end: "2026-11-25T15:20:00.000Z",
+      summary: "Busy",
+      description: "",
+      guest: { email: "x@example.com", name: "X" },
+    })
+    expect(await (await post(token)).json()).toEqual({ state: "taken" })
+    expect((await suggestionRow()).status).toBe("pending")
+  })
+
+  it("turns a different pick into a new request for Kate", async () => {
+    const { token, post, calendar, email } = await suggested()
+    expect(await (await post(token, { pick: THIRD })).json()).toEqual({
+      state: "requested",
+      start: THIRD,
+      emailed: true,
+    })
+    expect((await suggestionRow()).status).toBe("replaced")
+    expect(calendar.created).toHaveLength(0)
+    const [toKate] = email.sent
+    expect(toKate.to).toBe("kate@example.com")
+    const confirm = toKate.text.match(
+      new RegExp(`^Confirm: ${ORIGIN}/booking/(\\S+)$`, "m"),
+    )![1]
+    expect(await (await post(confirm)).json()).toMatchObject({
+      state: "confirmed",
+      start: THIRD,
+    })
+    expect(calendar.created[0].start).toBe(THIRD)
+  })
+
+  it("refuses a pick that isn't open, a foreign origin and unknown tokens", async () => {
+    const { token, post, call } = await suggested()
+    expect(
+      await (await post(token, { pick: "2026-11-25T17:00:00.000Z" })).json(),
+    ).toEqual({ state: "taken" })
+    expect((await suggestionRow()).status).toBe("pending")
+    expect(
+      (await call(token, "POST", { Origin: "https://evil.example" })).status,
+    ).toBe(403)
+    expect(await (await call(`time/${"a".repeat(43)}`)).json()).toEqual({
+      state: "used",
+    })
+  })
+
+  it("adds Kate's note to a decline", async () => {
+    const ctx = await setup()
+    await ctx.post(ctx.decline, { note: "I'm away that week." })
+    expect(ctx.email.sent[0].text).toContain(
+      "A note from Kate:\nI'm away that week.",
+    )
   })
 })

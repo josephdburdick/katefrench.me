@@ -3,6 +3,7 @@ import { Hono } from "hono"
 import {
   type CallDetails,
   type ContactResponse,
+  HOURLY_LEAD_CAP,
   LIMITS,
   SENDER,
   TIME_TAKEN,
@@ -38,8 +39,10 @@ export function contactApp(
   services: ContactServices | ((env: Env) => ContactServices),
 ): Hono<{ Bindings: Env }> {
   const app = new Hono<{ Bindings: Env }>()
-  const reply = (status: 200 | 400 | 403 | 413 | 502, body: ContactResponse) =>
-    Response.json(body, { status })
+  const reply = (
+    status: 200 | 400 | 403 | 413 | 429 | 502,
+    body: ContactResponse,
+  ) => Response.json(body, { status })
 
   app.all("/", async (c) => {
     const request = c.req.raw
@@ -90,6 +93,19 @@ export function contactApp(
     }
 
     const at = now?.() ?? new Date()
+    try {
+      const recent = await c.env.DB.prepare(
+        "SELECT COUNT(*) AS count FROM leads WHERE created_at > ?",
+      )
+        .bind(new Date(at.getTime() - 3_600_000).toISOString())
+        .first<{ count: number }>()
+      if ((recent?.count ?? 0) >= HOURLY_LEAD_CAP) {
+        console.error("contact: hourly cap reached")
+        return reply(429, { ok: false, error: "busy" })
+      }
+    } catch (error) {
+      console.error("contact: hourly count failed", errorCode(error))
+    }
     let call: CallDetails | undefined
     if (hasCallTime(answers)) {
       try {

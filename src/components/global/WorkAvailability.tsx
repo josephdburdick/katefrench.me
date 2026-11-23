@@ -1,15 +1,15 @@
 import { cn } from "@/lib/utils"
 
 type Props = {
-  reverse?: boolean;
-};
+  reverse?: boolean
+}
 export default function WorkAvailability(props: Props) {
   const { reverse = false } = props
   return (
     <div>
       <div
         className={cn(
-          "flex items-center gap-2 text-foreground dark:text-muted-foreground",
+          "text-foreground dark:text-muted-foreground flex items-center gap-2",
           reverse && "flex-row-reverse",
         )}
       >

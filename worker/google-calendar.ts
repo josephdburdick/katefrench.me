@@ -4,6 +4,8 @@ export type GoogleCredentials = {
   clientId: string
   clientSecret: string
   refreshToken: string
+  /** Calendars shared with the account whose busy times also block open times. Events never go on them. */
+  busyCalendars?: string[]
 }
 
 /** The only scopes the refresh token may carry: busy times and event inserts. */
@@ -102,36 +104,41 @@ export function googleCalendar(
 
   return {
     async busy(from, to) {
+      const ids = ["primary", ...(credentials.busyCalendars ?? [])]
       const body = await post("google-freebusy", FREEBUSY_URL, {
         timeMin: from.toISOString(),
         timeMax: to.toISOString(),
-        items: [{ id: "primary" }],
+        items: ids.map((id) => ({ id })),
       })
-      const primary =
-        isRecord(body) && isRecord(body.calendars)
-          ? body.calendars.primary
-          : undefined
-      if (!isRecord(primary)) {
-        throw new GoogleError("google-freebusy", "no primary calendar")
-      }
-      if (Array.isArray(primary.errors) && primary.errors.length > 0) {
-        throw new GoogleError("google-freebusy", "calendar errors")
-      }
-      if (!Array.isArray(primary.busy)) {
-        throw new GoogleError("google-freebusy", "unexpected response")
-      }
-      const intervals: Interval[] = primary.busy.map((interval: unknown) => {
-        const start = isRecord(interval)
-          ? Date.parse(String(interval.start))
-          : NaN
-        const end = isRecord(interval) ? Date.parse(String(interval.end)) : NaN
-        if (Number.isNaN(start) || Number.isNaN(end)) {
-          throw new GoogleError("google-freebusy", "invalid interval")
+      const calendars =
+        isRecord(body) && isRecord(body.calendars) ? body.calendars : {}
+      const intervals: Interval[] = ids.flatMap((id, index) => {
+        const name = index === 0 ? "primary calendar" : `calendar ${index + 1}`
+        const calendar = calendars[id]
+        if (!isRecord(calendar)) {
+          throw new GoogleError("google-freebusy", `no ${name}`)
         }
-        return {
-          start: new Date(start).toISOString(),
-          end: new Date(end).toISOString(),
+        if (Array.isArray(calendar.errors) && calendar.errors.length > 0) {
+          throw new GoogleError("google-freebusy", `${name} errors`)
         }
+        if (!Array.isArray(calendar.busy)) {
+          throw new GoogleError("google-freebusy", "unexpected response")
+        }
+        return calendar.busy.map((interval: unknown) => {
+          const start = isRecord(interval)
+            ? Date.parse(String(interval.start))
+            : NaN
+          const end = isRecord(interval)
+            ? Date.parse(String(interval.end))
+            : NaN
+          if (Number.isNaN(start) || Number.isNaN(end)) {
+            throw new GoogleError("google-freebusy", "invalid interval")
+          }
+          return {
+            start: new Date(start).toISOString(),
+            end: new Date(end).toISOString(),
+          }
+        })
       })
       return intervals
         .filter(
