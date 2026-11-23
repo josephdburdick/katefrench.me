@@ -152,10 +152,7 @@ export function SaveBar({
         <FieldError id="edit-draft" message={error} />
       </div>
       <div className="flex flex-wrap items-center gap-4">
-        <Button
-          type="submit"
-          className="focus-visible:ring-ring min-h-11 min-w-24 text-base focus-visible:ring-2 focus-visible:ring-offset-2"
-        >
+        <Button type="submit" className="min-h-11 min-w-24 text-base">
           Save
         </Button>
         <p aria-live="polite" className="font-semibold">

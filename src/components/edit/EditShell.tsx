@@ -11,7 +11,7 @@ export const linkClass =
   "inline-flex min-h-11 min-w-11 items-center rounded-md font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 export const cardLinkClass =
-  "border-primary/30 bg-secondary hover:border-primary focus-visible:ring-ring flex min-h-14 items-center justify-between gap-3 rounded-lg border px-4 py-3 font-medium focus-visible:ring-2 focus-visible:outline-none"
+  "border-primary/30 bg-secondary hover:border-primary hover:bg-primary/15 active:bg-primary/25 focus-visible:outline-foreground flex min-h-14 items-center justify-between gap-3 rounded-lg border px-4 py-3 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
 
 function EditMeta() {
   // index.html's "index, follow" would contradict the noindex below.

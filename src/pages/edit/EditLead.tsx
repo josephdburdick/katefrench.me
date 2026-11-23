@@ -24,8 +24,7 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useNavigate, useParams } from "react-router"
 
-const buttonClass =
-  "focus-visible:ring-ring min-h-11 text-base focus-visible:ring-2 focus-visible:ring-offset-2"
+const buttonClass = "min-h-11 text-base"
 
 function Answers({ lead }: { lead: LeadDetail }) {
   const pairs = answerPairs({

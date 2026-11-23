@@ -147,7 +147,7 @@ export default function BlockCity({
                   "focus-visible:outline-primary relative cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors motion-safe:duration-300",
                   active
                     ? "bg-background text-foreground"
-                    : "text-foreground/55 hover:text-foreground",
+                    : "text-foreground/55 hover:bg-background/60 hover:text-foreground",
                 )}
               >
                 <span className="block text-[0.8125rem] font-medium">
