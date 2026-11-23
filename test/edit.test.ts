@@ -510,15 +510,15 @@ describe("PUT /sections/:key", () => {
     ],
     [
       "a changed array length",
-      "first-call",
-      (b) => b.attributes.steps.items.push({ title: "More", text: "More" }),
-      "attributes.steps.items",
+      "new-york",
+      (b) => b.attributes.city.buttons.push(b.attributes.city.buttons[0]),
+      "attributes.city.buttons",
     ],
     [
       "a removed list item",
-      "marketing",
-      (b) => b.attributes.items.pop(),
-      "attributes.items",
+      "message",
+      (b) => b.attributes.notes.pop(),
+      "attributes.notes",
     ],
     [
       "a changed note number",
@@ -672,6 +672,67 @@ describe("database failures", () => {
     } finally {
       vi.restoreAllMocks()
     }
+  })
+})
+
+describe("lists Kate can rearrange", () => {
+  const save = async (key: string, change: (attributes: any) => void) => {
+    const body = sectionBody((await load())[key])
+    change(body.attributes)
+    return put(editPath(`/sections/${key}`), body)
+  }
+  const stored = async (key: string) => (await publicContent())[key].attributes
+
+  it("adds, deletes and reorders steps", async () => {
+    const res = await save("first-call", ({ steps }) => {
+      steps.items = [
+        steps.items[2],
+        steps.items[0],
+        { title: "Say thanks", text: "A note after the show." },
+      ]
+    })
+    expect(res.status).toBe(200)
+    const { steps } = await stored("first-call")
+    expect(steps.items.map((item: any) => item.title)).toEqual([
+      "Stay close on sale day",
+      "Learn their calendar",
+      "Say thanks",
+    ])
+  })
+
+  it("holds up to four recommendations", async () => {
+    const quote = { text: "Great to work with.", name: "A", company: "B" }
+    const ok = await save("marketing", (a) => {
+      a.quotes = [a.quotes[0], quote, quote, quote]
+      a.items[0].parts = ["One", ...a.items[0].parts]
+    })
+    expect(ok.status).toBe(200)
+    expect((await stored("marketing")).quotes).toHaveLength(4)
+
+    const tooMany = await save("marketing", (a) => a.quotes.push(quote))
+    expect(tooMany.status).toBe(400)
+    const extraField = await save("marketing", (a) => {
+      a.quotes = [{ ...quote, url: "https://example.com" }]
+    })
+    expect(extraField.status).toBe(400)
+    const none = await save("marketing", (a) => (a.items = []))
+    expect(none.status).toBe(400)
+  })
+
+  it("moves and removes roles but keeps each photo with its role", async () => {
+    const before = (await stored("venues")).roles
+    const res = await save("venues", (a) => {
+      a.roles = [a.roles[1], a.roles[0]]
+    })
+    expect(res.status).toBe(200)
+    const after = (await stored("venues")).roles
+    expect(after).toHaveLength(2)
+    expect(after[0].photo.src).toBe(before[1].photo.src)
+
+    const swapped = await save("venues", (a) => {
+      a.roles[0].photo = { ...a.roles[0].photo, src: "/assets/other.webp" }
+    })
+    expect(swapped.status).toBe(400)
   })
 })
 

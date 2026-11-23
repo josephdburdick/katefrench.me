@@ -57,6 +57,38 @@ export const LOCKED_PATHS = [
 
 export type Path = (string | number)[]
 
+/** A list Kate may reorder and shorten, and lengthen when `item` gives the shape of a new one. */
+export type FlexList = {
+  min: number
+  max: number
+  noun: string
+  item?: unknown
+}
+
+/** Keyed like `LOCKED_PATHS`. Lists not named here keep their length and order. */
+export const FLEX_LISTS: Record<string, FlexList> = {
+  "first-call.steps.items": {
+    min: 1,
+    max: 8,
+    noun: "step",
+    item: { title: "", text: "" },
+  },
+  "marketing.items": {
+    min: 1,
+    max: 6,
+    noun: "card",
+    item: { company: "", title: "", text: "", parts: [] },
+  },
+  "marketing.items[].parts": { min: 0, max: 6, noun: "tag", item: "" },
+  "marketing.quotes": {
+    min: 0,
+    max: 4,
+    noun: "recommendation",
+    item: { text: "", name: "", company: "" },
+  },
+  "venues.roles": { min: 1, max: 12, noun: "role" },
+}
+
 export type EditErrors = Record<string, string>
 
 export type EditEntry = {
@@ -96,6 +128,9 @@ export function pathPattern(path: Path) {
     return pattern ? `${pattern}.${segment}` : segment
   }, "")
 }
+
+export const flexList = (key: SectionKey, path: Path): FlexList | undefined =>
+  FLEX_LISTS[`${key}.${pathPattern(path)}`]
 
 export const isLocked = (key: SectionKey, path: Path) =>
   LOCKED_PATHS.includes(`${key}.${pathPattern(path)}`)
@@ -217,6 +252,44 @@ function checkShape(
   errors: EditErrors,
 ) {
   const field = fieldKey(["attributes", ...path])
+  const flex = flexList(key, path)
+  if (flex) {
+    if (
+      !Array.isArray(input) ||
+      input.length < flex.min ||
+      input.length > flex.max
+    ) {
+      errors[field] =
+        flex.min === 0
+          ? `Keep this to ${flex.max} ${flex.noun}s or fewer.`
+          : `Keep from ${flex.min} to ${flex.max} ${flex.noun}s.`
+      return
+    }
+    // Without `item`, each entry must be one of the stored ones, so its photo and other fixed values travel with it.
+    const candidates =
+      flex.item !== undefined
+        ? [flex.item]
+        : Array.isArray(stored)
+          ? stored
+          : []
+    input.forEach((value, i) => {
+      let closest: EditErrors | undefined
+      for (const candidate of candidates) {
+        const attempt: EditErrors = {}
+        checkShape(key, candidate, value, [...path, i], attempt)
+        const count = Object.keys(attempt).length
+        if (!closest || count < Object.keys(closest).length) closest = attempt
+        if (count === 0) break
+      }
+      Object.assign(
+        errors,
+        closest ?? {
+          [fieldKey(["attributes", ...path, i])]: "Keep the same fields.",
+        },
+      )
+    })
+    return
+  }
   if (Array.isArray(stored)) {
     if (!Array.isArray(input) || input.length !== stored.length) {
       errors[field] = "Keep the same number of items."

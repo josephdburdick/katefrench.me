@@ -18,10 +18,4 @@ quotes:
   - text: "Kate has been developing content for our website, standardizing workflows, as well as managing an increase of +2000% in lead submissions thanks to our NYC meta campaign!"
     name: Head of Sales
     company: AdmitONE
-  - text: ""
-    name: ""
-    company: ""
-  - text: ""
-    name: ""
-    company: ""
 ---

@@ -1,5 +1,6 @@
 import EditShell from "@/components/edit/EditShell"
-import { SaveBar, TextField } from "@/components/edit/fields"
+import { AddButton, ItemMenu, moved } from "@/components/edit/ItemMenu"
+import { FieldError, SaveBar, TextField } from "@/components/edit/fields"
 import { labelParts } from "@/components/edit/labels"
 import { useEditContent, useSave } from "@/components/edit/useEdit"
 import {
@@ -9,31 +10,25 @@ import {
   type SectionKey,
   editableLeaves,
   fieldKey,
+  flexList,
+  isLocked,
   isSectionKey,
   sectionTitle,
   setAt,
   validateSection,
 } from "@/lib/edit-content"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 import { useParams } from "react-router"
-
-type Leaf = { path: Path; value: string }
-
-const getAt = (target: unknown, path: Path) =>
-  path.reduce<any>((value, segment) => value?.[segment], target) as string
 
 const isLong = (value: string) => value.length > 60 || value.includes("\n")
 
-/** Leaves grouped by their top-level attribute, so a section reads in the order the page shows it. */
-function groupLeaves(leaves: Leaf[]) {
-  const groups: { name: string | number; leaves: Leaf[] }[] = []
-  for (const leaf of leaves) {
-    const last = groups[groups.length - 1]
-    if (last && last.name === leaf.path[0]) last.leaves.push(leaf)
-    else groups.push({ name: leaf.path[0], leaves: [leaf] })
-  }
-  return groups
-}
+const LONG_NAMES = new Set(["text", "paragraph", "takeaway", "caption"])
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+
+const capitalize = (text: string) =>
+  text.charAt(0).toUpperCase() + text.slice(1)
 
 function SectionForm({
   token,
@@ -51,33 +46,139 @@ function SectionForm({
     token,
     `/sections/${sectionKey}`,
   )
-  const [leaves] = useState(() => editableLeaves(sectionKey, entry.attributes))
+  const [longAtStart] = useState(
+    () =>
+      new Set(
+        editableLeaves(sectionKey, entry.attributes)
+          .filter((leaf) => isLong(leaf.value))
+          .map((leaf) => fieldKey(leaf.path)),
+      ),
+  )
   const showBody = entry.body.trim() !== ""
+  const placed = new Set(["draft", ...(showBody ? ["body"] : [])])
 
-  const field = (leaf: Leaf, label: string) => {
-    const key = fieldKey(["attributes", ...leaf.path])
+  const set = (path: Path, value: unknown) => {
+    setAttributes((all: unknown) => setAt(all, path, value))
+    changed()
+  }
+
+  const field = (path: Path, value: string, label: string) => {
+    const key = fieldKey(["attributes", ...path])
+    const name = [...path].reverse().find((part) => typeof part === "string")
+    placed.add(key)
     return (
       <TextField
         key={key}
         id={`edit-${key}`}
         label={label}
-        value={getAt(attributes, leaf.path)}
-        multiline={isLong(leaf.value)}
+        value={value}
+        multiline={
+          longAtStart.has(fieldKey(path)) || LONG_NAMES.has(String(name))
+        }
         maxLength={EDIT_LIMITS.text}
         error={errors[key]}
-        onChange={(next) => {
-          setAttributes((all: unknown) => setAt(all, leaf.path, next))
-          changed()
-        }}
+        onChange={(next) => set(path, next)}
       />
     )
   }
 
-  const placed = new Set([
-    "draft",
-    ...(showBody ? ["body"] : []),
-    ...leaves.map((leaf) => fieldKey(["attributes", ...leaf.path])),
-  ])
+  /** `labelFrom` is how many leading path parts the surrounding heading already names. */
+  const render = (value: unknown, path: Path, labelFrom: number): ReactNode => {
+    if (typeof value === "string") {
+      if (isLocked(sectionKey, path)) return null
+      return field(path, value, labelParts(path.slice(labelFrom)).join(" · "))
+    }
+    if (isObject(value)) {
+      return Object.entries(value).map(([k, v]) =>
+        render(v, [...path, k], labelFrom),
+      )
+    }
+    if (!Array.isArray(value)) return null
+    const flex = flexList(sectionKey, path)
+    if (!flex) return value.map((v, i) => render(v, [...path, i], labelFrom))
+
+    const listKey = fieldKey(["attributes", ...path])
+    placed.add(listKey)
+    return (
+      <div key={listKey} className="flex min-w-0 flex-col gap-3">
+        {value.map((item, i) => {
+          const itemPath = [...path, i]
+          const itemKey = fieldKey(["attributes", ...itemPath])
+          const name = `${flex.noun} ${i + 1}`
+          placed.add(itemKey)
+          const menu = (
+            <ItemMenu
+              name={name}
+              first={i === 0}
+              last={i === value.length - 1}
+              canDelete={value.length > flex.min}
+              onMove={(by) => set(path, moved(value, i, by))}
+              onDelete={() =>
+                set(
+                  path,
+                  value.filter((_, j) => j !== i),
+                )
+              }
+            />
+          )
+          if (typeof item === "string") {
+            return (
+              <div key={i} className="flex flex-wrap items-end gap-3">
+                <div className="min-w-0 flex-1">
+                  {field(itemPath, item, capitalize(name))}
+                </div>
+                {menu}
+              </div>
+            )
+          }
+          return (
+            <div
+              key={i}
+              className="border-primary/20 bg-background flex min-w-0 flex-col gap-4 rounded-lg border p-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="font-medium">{capitalize(name)}</span>
+                {menu}
+              </div>
+              <FieldError id={`edit-${itemKey}`} message={errors[itemKey]} />
+              {render(item, itemPath, itemPath.length)}
+            </div>
+          )
+        })}
+        {flex.item !== undefined && value.length < flex.max && (
+          <AddButton
+            onClick={() => set(path, [...value, structuredClone(flex.item)])}
+          >
+            Add a {flex.noun}
+          </AddButton>
+        )}
+        <FieldError id={`edit-${listKey}`} message={errors[listKey]} />
+      </div>
+    )
+  }
+
+  const groups = Object.entries(isObject(attributes) ? attributes : {}).map(
+    ([name, value]) => {
+      if (typeof value === "string") {
+        return render(value, [name], 0)
+      }
+      const flex = Array.isArray(value) && flexList(sectionKey, [name])
+      if (!flex && editableLeaves(sectionKey, value, [name]).length === 0) {
+        return null
+      }
+      return (
+        <fieldset
+          key={name}
+          className="border-primary/20 bg-secondary flex min-w-0 flex-col gap-4 rounded-lg border p-4"
+        >
+          <legend className="font-display text-primary px-1 text-lg">
+            {labelParts([name])[0]}
+          </legend>
+          {render(value, [name], Array.isArray(value) ? 0 : 1)}
+        </fieldset>
+      )
+    },
+  )
   const unplaced = Object.entries(errors).find(([key]) => !placed.has(key))
 
   return (
@@ -105,32 +206,7 @@ function SectionForm({
           }}
         />
       )}
-      {groupLeaves(leaves).map((group) => {
-        const [first] = group.leaves
-        if (group.leaves.length === 1 && first.path.length === 1) {
-          return field(first, labelParts(first.path).join(" · "))
-        }
-        return (
-          <fieldset
-            key={String(group.name)}
-            className="border-primary/20 bg-secondary flex min-w-0 flex-col gap-4 rounded-lg border p-4"
-          >
-            <legend className="font-display text-primary px-1 text-lg">
-              {labelParts([group.name])[0]}
-            </legend>
-            {group.leaves.map((leaf) => {
-              const parts = labelParts(leaf.path)
-              return field(
-                leaf,
-                (typeof leaf.path[1] === "string"
-                  ? parts.slice(1)
-                  : parts
-                ).join(" · "),
-              )
-            })}
-          </fieldset>
-        )
-      })}
+      {groups}
       {unplaced && <p className="font-semibold">{unplaced[1]}</p>}
       <SaveBar
         draft={draft}
