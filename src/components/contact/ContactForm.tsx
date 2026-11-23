@@ -426,6 +426,22 @@ export default function ContactForm({
         {STEP_HEADINGS[step]}
       </h2>
 
+      {stepIndex === 1 && option && (
+        <p className="border-primary/30 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-l-2 pl-3 text-sm">
+          <span>
+            <span className="text-foreground/70">{STEP_HEADINGS.intent}</span>{" "}
+            <span className="font-medium">{option.label}</span>
+          </span>
+          <button
+            type="button"
+            onClick={back}
+            className="text-primary font-medium underline underline-offset-4"
+          >
+            Change
+          </button>
+        </p>
+      )}
+
       {step === "intent" && (
         <>
           <Choices
