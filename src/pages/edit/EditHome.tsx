@@ -47,6 +47,9 @@ export default function EditHome() {
               ),
             )}
           </ul>
+          <Link to={`/edit/${token}/resume`} className={cardLinkClass}>
+            Resume
+          </Link>
           <Link to={`/edit/${token}/leads`} className={cardLinkClass}>
             Leads
           </Link>

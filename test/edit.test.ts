@@ -80,7 +80,7 @@ beforeEach(async () => {
 })
 
 describe("the edit token", () => {
-  it("lets the right token load the seven homepage sections", async () => {
+  it("lets the right token load the editable homepage sections", async () => {
     const res = await req(editPath("/content"))
     expect(res.status).toBe(200)
     const data = await res.json<Data>()
@@ -386,6 +386,27 @@ describe("PUT /numbers", () => {
 })
 
 describe("PUT /sections/:key", () => {
+  it("saves the introduction's paragraph and keeps its photo and link target", async () => {
+    const data = await load()
+    const body = sectionBody(data.intro)
+    body.body = "I open doors in New York."
+    body.attributes.heading1 = "Hi,"
+    expect((await put(editPath("/sections/intro"), body)).status).toBe(200)
+
+    const intro = (await publicContent()).intro
+    expect(intro.html).toContain("I open doors in New York.")
+    expect(intro.attributes.heading1).toBe("Hi,")
+
+    for (const change of [
+      (b: typeof body) => (b.attributes.link.url = "https://example.com"),
+      (b: typeof body) => (b.attributes.picture.src = "/other.webp"),
+    ]) {
+      const locked = sectionBody((await load()).intro)
+      change(locked)
+      expect((await put(editPath("/sections/intro"), locked)).status).toBe(400)
+    }
+  })
+
   it("saves a section's text", async () => {
     const data = await load()
     const body = sectionBody(data["new-york"])
@@ -650,6 +671,101 @@ describe("database failures", () => {
       for (const body of bodies) expect(body).not.toContain(TOKEN)
     } finally {
       vi.restoreAllMocks()
+    }
+  })
+})
+
+describe("the resume", () => {
+  type Resume = { sections: any[] }
+  const loadResume = async () =>
+    (await req(editPath("/resume"))).json<Resume>()
+
+  it("loads as text sections and dated entries", async () => {
+    const { sections } = await loadResume()
+    expect(sections.map((s) => s.title)).toEqual([
+      "About",
+      "Experience",
+      "Education",
+      "Certifications",
+      "Contact",
+    ])
+    expect(sections[0].kind).toBe("text")
+    expect(sections[1].entries[0]).toMatchObject({ start: 2025, end: null })
+    expect(sections[2].entries[0]).toMatchObject({
+      title: "Bachelor of Arts in Art History",
+      place: "Virginia Commonwealth University",
+      end: 2018,
+      details: ["Cum Laude"],
+    })
+  })
+
+  it("saves added, deleted, reordered and edited sections", async () => {
+    const { sections } = await loadResume()
+    const [about, experience, education] = sections
+    experience.entries = [experience.entries[1], experience.entries[0]]
+    experience.entries[0].title = "Product Consultant"
+    const body = {
+      sections: [
+        experience,
+        about,
+        education,
+        { kind: "text", title: "Languages", text: "English and Spanish." },
+      ],
+    }
+    expect((await put(editPath("/resume"), body)).status).toBe(200)
+
+    const { title, sections: stored } = (await publicContent()).cv.attributes
+    expect(title).toBe("Resume")
+    expect(stored.map((s: any) => s.title)).toEqual([
+      "Experience",
+      "About",
+      "Education",
+      "Languages",
+    ])
+    expect(stored[0].items[0].role).toBe("Product Consultant")
+    expect(stored[0].items[0].date.end).toBeNull()
+    expect(stored[2].items[0].date.end).toBe("2018-12-31T00:00:00.000Z")
+    expect(stored[3].content).toBe("English and Spanish.")
+    expect((await loadResume()).sections).toHaveLength(4)
+  })
+
+  it("rejects what can't be shown", async () => {
+    const { sections } = await loadResume()
+    const entry = (change: Record<string, unknown>) => ({
+      sections: [
+        {
+          ...sections[1],
+          entries: [{ ...sections[1].entries[0], ...change }],
+        },
+      ],
+    })
+    const cases: [unknown, string][] = [
+      [{ sections: [] }, "sections"],
+      [{ sections, extra: 1 }, "extra"],
+      [{ sections: [{ kind: "html", title: "x", text: "x" }] }, "sections.0"],
+      [{ sections: [{ ...sections[0], title: " " }] }, "sections.0.title"],
+      [{ sections: [{ ...sections[0], src: "x" }] }, "sections.0"],
+      [entry({ start: 1800 }), "sections.0.entries.0.start"],
+      [entry({ start: 2020, end: 2019 }), "sections.0.entries.0.end"],
+      [entry({ title: "" }), "sections.0.entries.0.title"],
+      [entry({ details: [1] }), "sections.0.entries.0.details"],
+    ]
+    for (const [body, field] of cases) {
+      const res = await put(editPath("/resume"), body)
+      expect(res.status, field).toBe(400)
+      const { fields } = await res.json<{ fields: Record<string, string> }>()
+      expect(Object.keys(fields), field).toContain(field)
+    }
+    expect((await loadResume()).sections).toHaveLength(5)
+  })
+
+  it("needs the token", async () => {
+    for (const res of [
+      await req(editPath("/resume", "wrong-token")),
+      await put(editPath("/resume", "wrong-token"), { sections: [] }),
+    ]) {
+      expect(res.status).toBe(404)
+      expect(await res.json()).toEqual(notFoundBody)
     }
   })
 })

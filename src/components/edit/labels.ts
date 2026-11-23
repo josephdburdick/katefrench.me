@@ -2,6 +2,8 @@ import type { Path } from "@/lib/edit-content"
 
 const WORDS: Record<string, string> = {
   alt: "Photo description",
+  heading1: "Heading, first line",
+  heading2: "Heading, second line",
   signoff: "Sign-off",
   when: "Dates",
 }

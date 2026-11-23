@@ -2,6 +2,7 @@ import type { NumberItem, NumberKind } from "./numbers"
 
 /** The homepage sections Kate can edit, in page order. */
 export const EDIT_SECTIONS = [
+  { key: "intro", title: "Introduction" },
   { key: "numbers", title: "Numbers" },
   { key: "new-york", title: "New York, from zero" },
   { key: "message", title: "The message that worked" },
@@ -44,6 +45,9 @@ export const NUMBER_RANGES: Record<
 
 /** Attribute paths that must keep their stored value. `[]` stands for any array index. */
 export const LOCKED_PATHS = [
+  "intro.title",
+  "intro.picture.src",
+  "intro.link.url",
   "numbers.items[].id",
   "numbers.items[].kind",
   "new-york.city.buttons[].number",

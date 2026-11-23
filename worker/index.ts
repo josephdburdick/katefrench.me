@@ -6,6 +6,7 @@ import { contactApp } from "./contact"
 import { content } from "./content"
 import { edit, editHeaders } from "./edit"
 import { editLeads } from "./edit-leads"
+import { editResume } from "./edit-resume"
 import type { Env } from "./env"
 import { servicesFor } from "./services"
 
@@ -19,6 +20,7 @@ app.route("/api/booking", bookingApp(servicesFor))
 app.use("/api/edit", editHeaders)
 app.use("/api/edit/", editHeaders)
 edit.route("/leads", editLeads)
+edit.route("/resume", editResume)
 app.route("/api/edit/:token", edit)
 
 app.all("/api/*", (c) => c.json({ error: "not found" }, 404))

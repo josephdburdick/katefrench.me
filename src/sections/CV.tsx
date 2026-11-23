@@ -142,7 +142,7 @@ function SectionItem({ item }: { item: SectionItemType }) {
       </div>
       {item?.details ? (
         <div className="grid-cols-6 gap-4 lg:grid">
-          {Array.isArray(item.details) ? (
+          {Array.isArray(item.details) && item.details.length > 1 ? (
             <ul className="col-span-4 col-start-3 list-disc pl-4 pt-1.5 text-sm text-muted lg:pl-0 [&>li]:mt-2">
               {item.details.map((detail, j) => (
                 <li key={j} className="text-pretty">
@@ -152,7 +152,7 @@ function SectionItem({ item }: { item: SectionItemType }) {
             </ul>
           ) : (
             <div className="col-span-4 col-start-3 pt-1.5 text-sm text-muted">
-              {item.details}
+              {Array.isArray(item.details) ? item.details[0] : item.details}
             </div>
           )}
         </div>
