@@ -4,6 +4,7 @@ import {
   type Errors,
   type Field,
   type Intent,
+  LINK_DETAILS,
   NO_CALL,
   type Source,
   emptyAnswers,
@@ -24,7 +25,12 @@ export type Prefill = { intent: Intent | null; from: Source | null }
 
 export default function useContactForm({ intent, from }: Prefill) {
   const [answers, setAnswers] = useState<Answers>(() =>
-    intent ? withIntent(emptyAnswers(), intent) : emptyAnswers(),
+    intent
+      ? {
+          ...withIntent(emptyAnswers(), intent),
+          details: { ...LINK_DETAILS[intent] },
+        }
+      : emptyAnswers(),
   )
   const [stepIndex, setStepIndex] = useState(intent ? 1 : 0)
   const [errors, setErrors] = useState<Errors>({})

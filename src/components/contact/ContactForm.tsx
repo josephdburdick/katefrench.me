@@ -78,7 +78,7 @@ function Choices({
         {options.map((option) => (
           <label
             key={option.value}
-            className="border-primary/30 bg-background hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-foreground has-[:focus-visible]:ring-offset-secondary cursor-pointer rounded-lg border px-3.5 py-2.5 text-[0.9375rem] transition-colors has-[:checked]:font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
+            className="border-primary/30 bg-background hover:border-primary hover:not-has-[:checked]:bg-primary/15 has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-foreground has-[:focus-visible]:ring-offset-secondary cursor-pointer rounded-lg border px-3.5 py-2.5 text-[0.9375rem] transition-colors has-[:checked]:font-medium has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
           >
             <input
               type="radio"
@@ -425,22 +425,6 @@ export default function ContactForm({
       <h2 ref={heading} tabIndex={-1} className={headingClass}>
         {STEP_HEADINGS[step]}
       </h2>
-
-      {stepIndex === 1 && option && (
-        <p className="border-primary/30 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-l-2 pl-3 text-sm">
-          <span>
-            <span className="text-foreground/70">{STEP_HEADINGS.intent}</span>{" "}
-            <span className="font-medium">{option.label}</span>
-          </span>
-          <button
-            type="button"
-            onClick={back}
-            className="text-primary font-medium underline underline-offset-4"
-          >
-            Change
-          </button>
-        </p>
-      )}
 
       {step === "intent" && (
         <>

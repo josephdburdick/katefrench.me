@@ -222,6 +222,11 @@ export const SOURCE_INTENT: Record<Source, Intent> = {
   venues: "venue",
 }
 
+/** Details already picked for a visitor who arrives from a section's link; they can still change them. */
+export const LINK_DETAILS: Partial<Record<Intent, Record<string, string>>> = {
+  venue: { kind: "A venue" },
+}
+
 export function nextStepHref(source: Source): string {
   const params = new URLSearchParams({
     intent: SOURCE_INTENT[source],
