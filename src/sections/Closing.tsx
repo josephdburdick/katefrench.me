@@ -1,3 +1,4 @@
+import SiteLink from "@/components/global/SiteLink"
 import { useApi } from "@/components/providers/ContentProvider"
 import { cn } from "@/lib/utils"
 import { useEffect, useRef, useState } from "react"
@@ -38,24 +39,24 @@ export default function Closing() {
         </h2>
         <p className="max-w-[34rem] text-lg">{text}</p>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <a
+          <SiteLink
             className="bg-primary-foreground text-foreground hover:bg-foreground hover:text-primary-foreground active:bg-foreground/85 focus-visible:outline-foreground rounded-lg px-6 py-[0.7rem] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
             href={contact.url}
           >
             {contact.text}
-          </a>
+          </SiteLink>
           <a
             className="font-medium underline underline-offset-4"
             href={linkedin.url}
           >
             {linkedin.text}
           </a>
-          <a
+          <SiteLink
             className="font-medium underline underline-offset-4"
             href={resume.url}
           >
             {resume.text}
-          </a>
+          </SiteLink>
         </div>
       </div>
       {picture && (

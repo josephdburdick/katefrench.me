@@ -1,3 +1,4 @@
+import SiteLink from "@/components/global/SiteLink"
 import { useApi } from "@/components/providers/ContentProvider"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -22,21 +23,18 @@ export default function Opening() {
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <a
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "px-8 text-base",
-            )}
+          <SiteLink
+            className={cn(buttonVariants({ size: "lg" }), "px-8 text-base")}
             href={intro.link.url}
           >
             {intro.link.text}
-          </a>
-          <a
+          </SiteLink>
+          <SiteLink
             className="text-primary font-medium underline underline-offset-4"
             href={resume.url}
           >
             {resume.text}
-          </a>
+          </SiteLink>
         </div>
       </div>
       <span className="relative -order-1 justify-self-start md:order-none md:justify-self-center">

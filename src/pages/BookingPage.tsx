@@ -3,6 +3,7 @@ import { loadAvailability } from "@/components/contact/submit"
 import { inputClass } from "@/components/edit/fields"
 import Footer from "@/components/global/Footer"
 import Header from "@/components/global/Header"
+import SiteLink from "@/components/global/SiteLink"
 import { Button } from "@/components/ui/button"
 import {
   BOOKING_NOTE_MAX,
@@ -220,9 +221,9 @@ export default function BookingPage() {
       <main className="container flex max-w-xl flex-1 flex-col justify-center gap-4 py-16">
         {body}
         <p>
-          <a className="text-primary underline" href="/">
+          <SiteLink className="text-primary underline" href="/">
             Back to the home page
-          </a>
+          </SiteLink>
         </p>
       </main>
       <Footer />

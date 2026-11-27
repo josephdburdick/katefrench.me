@@ -29,6 +29,7 @@ export default function EditHome() {
               ({ key, title }) => (
                 <li key={key}>
                   <Link
+                    viewTransition
                     to={
                       key === "numbers"
                         ? `/edit/${token}/numbers`
@@ -47,10 +48,18 @@ export default function EditHome() {
               ),
             )}
           </ul>
-          <Link to={`/edit/${token}/resume`} className={cardLinkClass}>
+          <Link
+            to={`/edit/${token}/resume`}
+            viewTransition
+            className={cardLinkClass}
+          >
             Resume
           </Link>
-          <Link to={`/edit/${token}/leads`} className={cardLinkClass}>
+          <Link
+            to={`/edit/${token}/leads`}
+            viewTransition
+            className={cardLinkClass}
+          >
             Leads
           </Link>
           <a href="/" className={`${linkClass} self-start`}>

@@ -2,6 +2,7 @@ import TimePicker from "@/components/booking/TimePicker"
 import { loadAvailability } from "@/components/contact/submit"
 import Footer from "@/components/global/Footer"
 import Header from "@/components/global/Header"
+import SiteLink from "@/components/global/SiteLink"
 import { Button } from "@/components/ui/button"
 import { type SuggestionResponse, formatCallTime } from "@/lib/contact-form"
 import { type ReactNode, useEffect, useState } from "react"
@@ -198,9 +199,9 @@ export default function SuggestionPage() {
       <main className="container flex max-w-xl flex-1 flex-col justify-center gap-4 py-16">
         {body}
         <p>
-          <a className="text-primary underline" href="/">
+          <SiteLink className="text-primary underline" href="/">
             Back to the home page
-          </a>
+          </SiteLink>
         </p>
       </main>
       <Footer />

@@ -68,11 +68,11 @@ export default function EditShell<T>({
         <div className="mx-auto flex w-full max-w-xl min-w-0 flex-col gap-6">
           {!home && (
             <nav className="flex flex-wrap gap-x-6">
-              <Link to={`/edit/${token}`} className={linkClass}>
+              <Link to={`/edit/${token}`} viewTransition className={linkClass}>
                 Back to edit home
               </Link>
               {back && (
-                <Link to={back.to} className={linkClass}>
+                <Link to={back.to} viewTransition className={linkClass}>
                   {back.label}
                 </Link>
               )}

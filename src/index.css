@@ -214,3 +214,120 @@
     transform: translateY(0);
   }
 }
+
+/*
+ * Page transitions between routes. A `SiteLink` or a `Link` with
+ * `viewTransition` wraps the route change in a view transition; browsers
+ * without them change page at once. The header and footer hold still and the
+ * main content moves the way you're going (`Root` in router.tsx sets
+ * `data-nav`): a deeper page comes in from the right, going back comes in from
+ * the left, and a page at the same depth rises from below.
+ */
+:root {
+  --vt-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vt-header {
+  view-transition-name: kf-header;
+}
+
+.vt-footer {
+  view-transition-name: kf-footer;
+}
+
+main {
+  view-transition-name: kf-main;
+}
+
+@keyframes vt-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(72px);
+  }
+}
+
+@keyframes vt-to-left {
+  to {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+}
+
+@keyframes vt-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-72px);
+  }
+}
+
+@keyframes vt-to-right {
+  to {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+}
+
+@keyframes vt-from-below {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+}
+
+@keyframes vt-to-above {
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
+
+/* Named groups crossfade by default; these hold them steady. */
+::view-transition-old(kf-header),
+::view-transition-new(kf-header),
+::view-transition-old(kf-footer),
+::view-transition-new(kf-footer) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(kf-main) {
+  animation-duration: 0.36s;
+  animation-timing-function: var(--vt-ease);
+}
+
+::view-transition-old(kf-main) {
+  animation: vt-to-above 0.18s ease-in both;
+}
+
+::view-transition-new(kf-main) {
+  animation: vt-from-below 0.36s var(--vt-ease) both;
+}
+
+html[data-nav="forward"]::view-transition-old(kf-main) {
+  animation-name: vt-to-left;
+}
+
+html[data-nav="forward"]::view-transition-new(kf-main) {
+  animation-name: vt-from-right;
+}
+
+html[data-nav="back"]::view-transition-old(kf-main) {
+  animation-name: vt-to-right;
+}
+
+html[data-nav="back"]::view-transition-new(kf-main) {
+  animation-name: vt-from-left;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

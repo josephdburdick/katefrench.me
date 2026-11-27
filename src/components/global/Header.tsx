@@ -2,6 +2,7 @@ import { useApi } from "@/components/providers/ContentProvider"
 import { cn } from "@/lib/utils"
 
 import ExternalLink from "./ExternalLink"
+import SiteLink from "./SiteLink"
 
 export default function Header() {
   const { data } = useApi()
@@ -10,11 +11,11 @@ export default function Header() {
   return (
     <header
       className={cn(
-        "text-primary container flex items-center justify-between py-4 md:py-8",
+        "vt-header text-primary container flex items-center justify-between py-4 md:py-8",
       )}
     >
       <h1 className="inline-flex flex-nowrap items-center gap-2 text-xl font-bold">
-        <a href="/">{name}</a> ✨
+        <SiteLink href="/">{name}</SiteLink> ✨
       </h1>
       <div className="font-semi flex items-end justify-between gap-4 md:items-center">
         <ExternalLink href={linkedin.url}>{linkedin.text}</ExternalLink>

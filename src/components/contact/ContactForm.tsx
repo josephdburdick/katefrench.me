@@ -1,3 +1,4 @@
+import SiteLink from "@/components/global/SiteLink"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   type Answers,
@@ -402,12 +403,12 @@ export default function ContactForm({
         ) : (
           <p>I&rsquo;ll reply by email soon.</p>
         )}
-        <a
+        <SiteLink
           href="/"
           className={cn(buttonVariants({ variant: "outline" }), "self-start")}
         >
           Back to the home page
-        </a>
+        </SiteLink>
       </div>
     )
   }
@@ -541,9 +542,9 @@ export default function ContactForm({
 
       <div className="flex items-center justify-between gap-3 pt-1">
         {stepIndex === 0 ? (
-          <a href="/" className={buttonVariants({ variant: "outline" })}>
+          <SiteLink href="/" className={buttonVariants({ variant: "outline" })}>
             Back
-          </a>
+          </SiteLink>
         ) : (
           <Button type="button" variant="outline" onClick={back}>
             Back
@@ -561,9 +562,9 @@ export default function ContactForm({
       </div>
       {last && (
         <p className="text-sm">
-          <a className="underline" href="/privacy">
+          <SiteLink className="underline" href="/privacy">
             How this site handles your details
-          </a>
+          </SiteLink>
         </p>
       )}
     </form>

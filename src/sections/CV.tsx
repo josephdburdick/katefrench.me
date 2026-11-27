@@ -1,3 +1,4 @@
+import SiteLink from "@/components/global/SiteLink"
 import BodyText from "@/components/global/BodyText"
 import DateSpan from "@/components/global/DateSpan"
 import { useApi } from "@/components/providers/ContentProvider"
@@ -92,7 +93,7 @@ function Hero(
         </a>
       )}
       {contact && (
-        <a
+        <SiteLink
           href={contact.url}
           className={cn(
             buttonVariants({ variant: "outline" }),
@@ -100,7 +101,7 @@ function Hero(
           )}
         >
           {contact.text}
-        </a>
+        </SiteLink>
       )}
     </div>
   )

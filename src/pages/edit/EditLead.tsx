@@ -128,7 +128,7 @@ function DeleteLead({ token, lead }: { token: string; lead: LeadDetail }) {
     setFailed(false)
     const ok = await deleteEdit(token, `/leads/${encodeURIComponent(lead.id)}`)
     if (ok) {
-      navigate(`/edit/${token}/leads`)
+      navigate(`/edit/${token}/leads`, { viewTransition: true })
       return
     }
     setDeleting(false)

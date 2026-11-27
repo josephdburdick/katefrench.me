@@ -70,6 +70,7 @@ function LeadsList({ token, data }: { token: string; data: LeadsResponse }) {
           {shown.map((lead) => (
             <li key={lead.id}>
               <Link
+                viewTransition
                 to={`/edit/${token}/leads/${encodeURIComponent(lead.id)}`}
                 className={cn(cardLinkClass, "items-start")}
               >

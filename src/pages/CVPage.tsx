@@ -6,8 +6,9 @@ export default function CVPage() {
   return (
     <>
       <Header />
-      <CV />
-      <Header />
+      <main>
+        <CV />
+      </main>
       <Footer />
     </>
   )
