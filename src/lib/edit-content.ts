@@ -67,6 +67,18 @@ export type FlexList = {
 
 /** Keyed like `LOCKED_PATHS`. Lists not named here keep their length and order. */
 export const FLEX_LISTS: Record<string, FlexList> = {
+  "message.email.paragraphs": {
+    min: 1,
+    max: 8,
+    noun: "paragraph",
+    item: "",
+  },
+  "message.notes": {
+    min: 0,
+    max: 10,
+    noun: "note",
+    item: { lead: "", text: "" },
+  },
   "first-call.steps.items": {
     min: 1,
     max: 8,

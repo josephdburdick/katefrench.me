@@ -443,7 +443,7 @@ describe("PUT /sections/:key", () => {
   it("saves nested text, like the message's email and the empty quote", async () => {
     const data = await load()
     const message = sectionBody(data.message)
-    message.attributes.email.paragraphs[1][0].text = "I work with AdmitONE."
+    message.attributes.email.paragraphs[1] = "I work with AdmitONE."
     expect((await put(editPath("/sections/message"), message)).status).toBe(200)
     const firstCall = sectionBody(data["first-call"])
     firstCall.attributes.quote.text = "Kate picked up on show night."
@@ -451,10 +451,9 @@ describe("PUT /sections/:key", () => {
       (await put(editPath("/sections/first-call"), firstCall)).status,
     ).toBe(200)
     const saved = await publicContent()
-    expect(saved.message.attributes.email.paragraphs[1][0]).toEqual({
-      text: "I work with AdmitONE.",
-      note: 3,
-    })
+    expect(saved.message.attributes.email.paragraphs[1]).toBe(
+      "I work with AdmitONE.",
+    )
     expect(saved["first-call"].attributes.quote.text).toBe(
       "Kate picked up on show night.",
     )
@@ -517,14 +516,8 @@ describe("PUT /sections/:key", () => {
     [
       "a removed list item",
       "message",
-      (b) => b.attributes.notes.pop(),
-      "attributes.notes",
-    ],
-    [
-      "a changed note number",
-      "message",
-      (b) => (b.attributes.email.paragraphs[0][0].note = 9),
-      "attributes.email.paragraphs.0.0.note",
+      (b) => b.attributes.email.signoff.pop(),
+      "attributes.email.signoff",
     ],
     [
       "a changed photo width",
@@ -719,6 +712,47 @@ describe("lists Kate can rearrange", () => {
     expect(none.status).toBe(400)
   })
 
+  it("takes any number of message notes and paragraphs, within the limits", async () => {
+    const note = { lead: "Keep it short", text: "One idea per message." }
+    const res = await save("message", (a) => {
+      a.notes = [a.notes[1], note]
+      a.email.paragraphs = [a.email.paragraphs[0], "See you at the show."]
+    })
+    expect(res.status).toBe(200)
+    const message = await stored("message")
+    expect(message.notes).toHaveLength(2)
+    expect(message.notes[1]).toEqual(note)
+    expect(message.email.paragraphs[1]).toBe("See you at the show.")
+
+    expect((await save("message", (a) => (a.notes = []))).status).toBe(200)
+    const tooMany = await save(
+      "message",
+      (a) => (a.notes = Array.from({ length: 11 }, () => note)),
+    )
+    expect(tooMany.status).toBe(400)
+    const numbered = await save(
+      "message",
+      (a) => (a.notes = [{ ...note, note: 1 }]),
+    )
+    expect(numbered.status).toBe(400)
+    const noEmail = await save("message", (a) => (a.email.paragraphs = []))
+    expect(noEmail.status).toBe(400)
+  })
+
+  it("saves a subheading and accepts an empty one", async () => {
+    const filled = await save(
+      "marketing",
+      (a) => (a.subheading = "Work I took on because it needed doing."),
+    )
+    expect(filled.status).toBe(200)
+    expect((await stored("marketing")).subheading).toBe(
+      "Work I took on because it needed doing.",
+    )
+    const empty = await save("marketing", (a) => (a.subheading = ""))
+    expect(empty.status).toBe(200)
+    expect((await stored("marketing")).subheading).toBe("")
+  })
+
   it("moves and removes roles but keeps each photo with its role", async () => {
     const before = (await stored("venues")).roles
     const res = await save("venues", (a) => {
@@ -738,8 +772,7 @@ describe("lists Kate can rearrange", () => {
 
 describe("the resume", () => {
   type Resume = { sections: any[] }
-  const loadResume = async () =>
-    (await req(editPath("/resume"))).json<Resume>()
+  const loadResume = async () => (await req(editPath("/resume"))).json<Resume>()
 
   it("loads as text sections and dated entries", async () => {
     const { sections } = await loadResume()

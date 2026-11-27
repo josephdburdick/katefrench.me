@@ -1,20 +1,14 @@
 ---
 draft: true
 heading: The message that worked
+subheading: ""
 email:
   greeting: Hi there,
-  greetingNote: 1
   paragraphs:
-    - - text: I recently came across your events at ____ and wanted to reach out.
-        note: 2
-    - - text: I work with AdmitONE, a ticketing platform built by event organizers for event organizers.
-        note: 3
-      - text: We offer free marketing opportunities to help grow attendance and reach new audiences while keeping our service fees lower than Eventbrite's.
-        note: 4
-    - - text: Are you looking for ways to boost ticket sales for your next show?
-        note: 5
-    - - text: I'd love to chat about how we might be able to help. Let me know a time that works well for you, or feel free to book directly on my calendar here.
-        note: 6
+    - I recently came across your events at ____ and wanted to reach out.
+    - I work with AdmitONE, a ticketing platform built by event organizers for event organizers. We offer free marketing opportunities to help grow attendance and reach new audiences while keeping our service fees lower than Eventbrite's.
+    - Are you looking for ways to boost ticket sales for your next show?
+    - I'd love to chat about how we might be able to help. Let me know a time that works well for you, or feel free to book directly on my calendar here.
   signoff:
     - Best,
     - Kate

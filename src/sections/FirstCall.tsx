@@ -1,4 +1,4 @@
-import SubHeading from "@/components/global/SubHeading"
+import SectionHeading from "@/components/global/SectionHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 
 type Step = { title: string; text: string }
@@ -9,7 +9,7 @@ export default function FirstCall() {
   return (
     <section className="flex flex-col gap-12">
       <div className="flex min-w-0 flex-col gap-6">
-        <SubHeading>{steps.heading}</SubHeading>
+        <SectionHeading heading={steps.heading} subheading={steps.subheading} />
         <ol className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
           {steps.items.map((step: Step, i: number) => (
             <li

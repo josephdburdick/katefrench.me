@@ -1,5 +1,5 @@
 import NextStep from "@/components/global/NextStep"
-import SubHeading from "@/components/global/SubHeading"
+import SectionHeading from "@/components/global/SectionHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 
 import BlockCity from "./BlockCity"
@@ -15,7 +15,10 @@ export default function NewYork() {
     >
       <div className="grid items-start gap-x-12 gap-y-8 md:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">
-          <SubHeading>{attributes.heading}</SubHeading>
+          <SectionHeading
+            heading={attributes.heading}
+            subheading={attributes.subheading}
+          />
           <div
             className="flex max-w-[36rem] flex-col gap-4 text-[1.0625rem] text-pretty"
             dangerouslySetInnerHTML={{ __html: html }}

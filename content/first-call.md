@@ -2,6 +2,7 @@
 draft: true
 steps:
   heading: How I keep clients coming back
+  subheading: ""
   items:
     - title: Learn their calendar
       text: What they put on, how often, and what they sell tickets with today.

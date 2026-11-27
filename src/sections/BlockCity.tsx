@@ -7,7 +7,7 @@ import type { CityScene } from "./BlockCityScene"
 
 type CityButton = { text: string; number: string; phrase: string }
 
-export type City = { label: string; buttons: CityButton[]; key: string }
+export type City = { label: string; buttons: CityButton[] }
 
 const blocks = Array.from({ length: CELLS }, (_, i) => i)
 const { rank } = cityLayout()
@@ -88,7 +88,7 @@ export default function BlockCity({
 
   return (
     <div className="contents">
-      <div className="flex min-w-0 flex-col gap-3 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
+      <div className="min-w-0 md:col-start-2 md:row-span-2 md:row-start-1 md:self-center">
         <div
           ref={stage}
           aria-hidden="true"
@@ -121,9 +121,6 @@ export default function BlockCity({
             />
           )}
         </div>
-        <p className="text-foreground/70 text-center text-[0.8125rem]">
-          {city.key}
-        </p>
       </div>
       <div className="flex min-w-0 flex-col gap-4 md:col-start-1 md:row-start-2">
         <div

@@ -1,5 +1,6 @@
 ---
 heading: New York, from zero
+subheading: ""
 city:
   label: Choose a number to see
   buttons:
@@ -12,7 +13,6 @@ city:
     - text: Demos
       number: demos
       phrase: of demos go on to onboarding.
-  key: Each block is one in a hundred. The amber ones said yes.
 cta:
   text: "Building a team in New York? Tell me about the role."
   draft: true

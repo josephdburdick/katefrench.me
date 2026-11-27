@@ -5,6 +5,7 @@ const WORDS: Record<string, string> = {
   heading1: "Heading, first line",
   heading2: "Heading, second line",
   signoff: "Sign-off",
+  subheading: "Subheading (optional)",
   when: "Dates",
 }
 

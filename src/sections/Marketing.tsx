@@ -1,4 +1,4 @@
-import SubHeading from "@/components/global/SubHeading"
+import SectionHeading from "@/components/global/SectionHeading"
 import { useApi } from "@/components/providers/ContentProvider"
 import { cn } from "@/lib/utils"
 
@@ -7,14 +7,14 @@ type Item = { company: string; title: string; text: string; parts: string[] }
 
 export default function Marketing() {
   const { data } = useApi()
-  const { heading, items, quotes } = data.marketing.attributes
+  const { heading, subheading, items, quotes } = data.marketing.attributes
   const shown: Quote[] = (quotes ?? []).filter((quote: Quote) =>
     quote.text?.trim(),
   )
   const several = shown.length > 1
   return (
     <section className="flex flex-col gap-8">
-      <SubHeading>{heading}</SubHeading>
+      <SectionHeading heading={heading} subheading={subheading} />
       <ul className="grid gap-4 md:grid-cols-2">
         {items
           .filter((item: Item) => item.title?.trim() || item.text?.trim())

@@ -1,6 +1,7 @@
 import NextStep from "@/components/global/NextStep"
-import SubHeading from "@/components/global/SubHeading"
+import SectionHeading from "@/components/global/SectionHeading"
 import { useApi } from "@/components/providers/ContentProvider"
+import { cn } from "@/lib/utils"
 
 type Role = {
   when: string
@@ -13,17 +14,22 @@ type Role = {
 
 export default function Venues() {
   const { data } = useApi()
-  const { heading, roles } = data.venues.attributes
+  const { heading, subheading, roles } = data.venues.attributes
   return (
     <section className="flex flex-col gap-8">
-      <SubHeading>{heading}</SubHeading>
+      <SectionHeading heading={heading} subheading={subheading} />
       <ul className="flex flex-col gap-12">
-        {roles.map((role: Role) => (
+        {roles.map((role: Role, i: number) => (
           <li
             key={role.title}
             className="grid items-start gap-x-10 gap-y-6 md:grid-cols-2"
           >
-            <figure className="flex flex-col gap-2">
+            <figure
+              className={cn(
+                "flex flex-col gap-2",
+                i % 2 === 1 && "md:order-last",
+              )}
+            >
               <div className="relative overflow-hidden rounded-xl">
                 <img
                   loading="lazy"
